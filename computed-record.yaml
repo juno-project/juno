@@ -1,0 +1,118 @@
+---
+uuid: 00000000-0000-0000-0000-000000000000
+flow: AutoDrivingPipeline
+operators:
+  TrafficLightDetOperator:
+    id: TrafficLightDetOperator
+    inputs:
+      - port_id: FrameMsg
+        port_type: usize
+    outputs:
+      - port_id: TrafficLightsMsg
+        port_type: usize
+    uri: "file://./pylot/perception/detection/traffic_light_det_operator.py"
+    configuration:
+      log_traffic_light_detector_output: true
+      model_path: "./dependencies/models/traffic_light_detection/faster-rcnn/"
+      out_path: "./out_data/"
+      traffic_light_det_gpu_index: 0
+      traffic_light_det_min_score_threshold: 3
+    deadline: ~
+    runtime: foo
+    ciclo: ~
+  DetectionOperator:
+    id: DetectionOperator
+    inputs:
+      - port_id: FrameMsg
+        port_type: usize
+    outputs:
+      - port_id: ObstaclesMsg
+        port_type: usize
+    uri: "file://./pylot/perception/detection/detection_operator.py"
+    configuration:
+      log_detector_output: true
+      model_path: "./dependencies/models/obstacle_detection/faster-rcnn/"
+      obstacle_detection_gpu_index: 0
+      obstacle_detection_min_score_threshold: 3
+      out_path: "./out_data/"
+      path_coco_labels: "./dependencies/models/pylot.names"
+    deadline: ~
+    runtime: foo
+    ciclo: ~
+sinks:
+  DetectionSink:
+    id: DetectionSink
+    input:
+      port_id: ObstaclesMsg
+      port_type: usize
+    uri: "file://./sinks/detection_sink.py"
+    configuration: ~
+    runtime: foo
+  TrafficLightSink:
+    id: TrafficLightSink
+    input:
+      port_id: TrafficLightsMsg
+      port_type: usize
+    uri: "file://./sinks/traffic_light_det_sink.py"
+    configuration: ~
+    runtime: foo
+sources:
+  DetectionSrc:
+    id: DetectionSrc
+    output:
+      port_id: FrameMsg
+      port_type: usize
+    period: ~
+    uri: "file://./sources/detection_source.py"
+    configuration:
+      image_path: "./data/perfect-detector-6901.png"
+    runtime: foo
+  TrafficLightSrc:
+    id: TrafficLightSrc
+    output:
+      port_id: FrameMsg
+      port_type: usize
+    period: ~
+    uri: "file://./sources/traffic_light_det_source.py"
+    configuration:
+      image_path: "./data/center-8711.png"
+    runtime: foo
+connectors: []
+links:
+  - from:
+      node: DetectionSrc
+      output: FrameMsg
+    to:
+      node: DetectionOperator
+      input: FrameMsg
+    size: ~
+    queueing_policy: ~
+    priority: ~
+  - from:
+      node: DetectionOperator
+      output: ObstaclesMsg
+    to:
+      node: DetectionSink
+      input: ObstaclesMsg
+    size: ~
+    queueing_policy: ~
+    priority: ~
+  - from:
+      node: TrafficLightSrc
+      output: FrameMsg
+    to:
+      node: TrafficLightDetOperator
+      input: FrameMsg
+    size: ~
+    queueing_policy: ~
+    priority: ~
+  - from:
+      node: TrafficLightDetOperator
+      output: TrafficLightsMsg
+    to:
+      node: TrafficLightSink
+      input: TrafficLightsMsg
+    size: ~
+    queueing_policy: ~
+    priority: ~
+end_to_end_deadlines: ~
