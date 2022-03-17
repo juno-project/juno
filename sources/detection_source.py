@@ -1,6 +1,8 @@
 
 import sys
-sys.path.append('/home/kkhao/pycharmPro/zenoh-flow-auto-driving/')
+sys.path.append('/home/zenoh-flow-auto-driving/')
+sys.path.append('/usr/lib/python3.8')
+sys.path.append('/home/test2/.local/lib/python3.8/site-packages')
 from zenoh_flow import Inputs, Outputs, Source
 import time
 import pickle
@@ -46,7 +48,7 @@ def register():
     return MySrc
 
 if __name__=='__main__':
-    config = {'image_path': '/home/kkhao/pycharmPro/zenoh-flow-auto-driving/data/center-8711.png'}
+    config = {'image_path': '/home/zenoh-flow-auto-driving/data/center-8711.png'}
     camera = MySrc()
     state = camera.initialize(config)
     camera.run(None, state)

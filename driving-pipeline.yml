@@ -10,7 +10,7 @@ operators:
       log_detector_output: true
       out_path: ./out_data/
     inputs:
-      - id: RGBFrameMsg
+      - id: FrameMsg
         type: usize
     outputs:
       - id: ObstaclesMsg
