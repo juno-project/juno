@@ -1,11 +1,15 @@
 """This module implements localization related Message classes."""
+import os
+import sys
 
-import erdos
+# project_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + os.path.sep + "..")
+# project_path = os.path.abspath(os.path.dirname(project_path) + os.path.sep + ".")
+# sys.path.append(project_path)
+# print("project_path:" + project_path)
+from pylot.utils import Transform, Vector3D, Pose
 
-from pylot.utils import Transform, Vector3D
 
-
-class IMUMessage(erdos.Message):
+class IMUMessage():
     """Message class to be used to send IMU measurements.
 
     Args:
@@ -28,9 +32,9 @@ class IMUMessage(erdos.Message):
         compass (:obj:`float`): Orientation measurement w.r.t North direction
             ((0, -1, 0) in Unreal) in radians.
     """
-    def __init__(self, timestamp: erdos.Timestamp, transform: Transform,
+    def __init__(self, timestamp, transform: Transform,
                  acceleration: Vector3D, gyro: Vector3D, compass: float):
-        super(IMUMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         self.transform = transform
         self.acceleration = acceleration
         self.gyro = gyro
@@ -46,7 +50,7 @@ class IMUMessage(erdos.Message):
                 self.compass)
 
 
-class GNSSMessage(erdos.Message):
+class GNSSMessage():
     """Message class to be used to send GNSS measurements.
 
     Args:
@@ -63,9 +67,9 @@ class GNSSMessage(erdos.Message):
         latitude (float): North/South value of a point on the map.
         longitude (float): West/East value of a point on the map.
     """
-    def __init__(self, timestamp: erdos.Timestamp, transform: Transform,
+    def __init__(self, timestamp, transform: Transform,
                  altitude: float, latitude: float, longitude: float):
-        super(GNSSMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         self.transform = transform
         self.altitude = altitude
         self.latitude = latitude
@@ -79,3 +83,18 @@ class GNSSMessage(erdos.Message):
                 'latitude: {}, longitude: {})'.format(
                     self.timestamp, self.transform, self.altitude,
                     self.latitude, self.longitude)
+
+
+class PoseMessage():
+    def __init__(self, timestamp, post: Pose):
+        self.timestamp = timestamp
+        self.post = post
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return 'PoseMessage(timestamp: {}, post: {}'.format(
+                self.timestamp, self.post)
+
+
