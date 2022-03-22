@@ -3,13 +3,12 @@ import sys
 sys.path.append('/home/zenoh-flow-auto-driving/')
 sys.path.append('/usr/lib/python3.8')
 sys.path.append('/home/test2/.local/lib/python3.8/site-packages')
-from zenoh_flow import Inputs, Outputs, Source
+from zenoh_flow import Source
 import time
 import pickle
 import cv2
 import pylot.utils
-from pylot.drivers.sensor_setup import DepthCameraSetup, RGBCameraSetup, \
-    SegmentedCameraSetup
+from pylot.drivers.sensor_setup import RGBCameraSetup
 from pylot.perception.camera_frame import CameraFrame
 from pylot.perception.messages import FrameMessage
 if not hasattr(sys, 'argv'):

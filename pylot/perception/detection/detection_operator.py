@@ -1,20 +1,19 @@
 """Implements an operator that detects obstacles."""
-import logging
+import os
+import pickle
 import time
 
 import numpy as np
-import os
-import pickle
+import tensorflow as tf
+
 from pylot.perception.detection.obstacle import Obstacle
 from pylot.perception.detection.utils import BoundingBox2D, \
     OBSTACLE_LABELS, load_coco_bbox_colors, load_coco_labels
 from pylot.perception.messages import ObstaclesMessage
 
-import tensorflow as tf
 
 class DetectionState:
     def __init__(self, cfg):
-
         # Only sets memory growth for flagged GPU
         # physical_devices = tf.config.experimental.list_physical_devices('GPU')
         # tf.config.experimental.set_visible_devices(
@@ -52,6 +51,7 @@ class DetectionState:
         res_scores = scores[0][:num_detections]
         return num_detections, res_boxes, res_scores, res_classes
 
+
 class DetectionOperator():
     """Detects obstacles using a TensorFlow model.
 
@@ -59,6 +59,7 @@ class DetectionOperator():
     frame.
 
     """
+
     def initialize(self, configuration):
         return DetectionState(configuration)
 
@@ -86,7 +87,7 @@ class DetectionOperator():
         for i in range(0, num_detections):
             if res_classes[i] in _state._coco_labels:
                 if (res_scores[i] >=
-                        _state.cfg['obstacle_detection_min_score_threshold']/10):
+                        _state.cfg['obstacle_detection_min_score_threshold'] / 10):
                     if (_state._coco_labels[res_classes[i]] in OBSTACLE_LABELS):
                         obstacles.append(
                             Obstacle(BoundingBox2D(
@@ -98,13 +99,13 @@ class DetectionOperator():
                                     msg.frame.camera_setup.height),
                                 int(res_boxes[i][2] *
                                     msg.frame.camera_setup.height)),
-                                     res_scores[i],
-                                     _state._coco_labels[res_classes[i]],
-                                     id=_state._unique_id))
+                                res_scores[i],
+                                _state._coco_labels[res_classes[i]],
+                                id=_state._unique_id))
                         _state._unique_id += 1
                     else:
                         print('Ignoring non essential detection {}'.format(
-                                _state._coco_labels[res_classes[i]]))
+                            _state._coco_labels[res_classes[i]]))
             else:
                 print('Filtering unknown class: {}'.format(
                     res_classes[i]))
@@ -124,6 +125,7 @@ class DetectionOperator():
                            'detector-{}'.format('DetectionOperator'))
 
         return {'ObstaclesMsg': pickle.dumps(ObstaclesMessage(msg.timestamp, obstacles, runtime))}
+
 
 def register():
     return DetectionOperator
