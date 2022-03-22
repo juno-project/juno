@@ -1,10 +1,8 @@
 """This module implements EKF localization using GNSS and IMU."""
 import pickle
-import sys
 import time
 from collections import deque
 import numpy as np
-sys.path.append('/home/erdos/zenoh-flow-auto-driving/')
 from pylot.localization.messages import PoseMessage
 from pylot.utils import Location, Pose, Quaternion, Rotation, Transform, \
     Vector3D

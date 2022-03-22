@@ -254,7 +254,7 @@ class ObstacleTrajectoriesMessage(erdos.Message):
         return sorted_trajectories, nearby_obstacles_ego_transforms
 
 
-class LanesMessage(erdos.Message):
+class LanesMessage():
     """Message to be used to send info about lanes.
 
     Args:
@@ -266,7 +266,7 @@ class LanesMessage(erdos.Message):
         lanes (list(:py:class:`~.detection.lane.Lane`)): List of lanes.
     """
     def __init__(self, timestamp, lanes):
-        super(LanesMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         self.lanes = lanes
 
     def __repr__(self):

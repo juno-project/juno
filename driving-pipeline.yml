@@ -38,6 +38,19 @@ operators:
     outputs:
       - id: PoseMessage
         type: usize
+
+  - id: LanenetDetectionOperator
+    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
+    configuration:
+      lane_detection_gpu_index: 0
+      lane_detection_gpu_memory_fraction: 3
+      lanenet_detection_model_path:  /home/erdos/zenoh-flow-auto-driving/pylot/dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
+    inputs:
+      - id: laneMsg
+        type: usize
+    outputs:
+      - id: LanesMessage
+        type: usize
 sources:
   - id : DetectionSrc
     uri: file://./sources/detection_source.py
@@ -62,6 +75,15 @@ sources:
     output:
       id: localizationMsg
       type: usize
+
+
+  - id: LanenetDetectionSrc
+    uri: file://./sources/lanenet_detection_source.py
+    configuration:
+       image_path: ./test_data/LaneDetectionOperator/input/lane-raw-lanenet_lane_detection-6871.png
+    output:
+       id: laneMsg
+       type: usize
 sinks:
   - id : DetectionSink
     uri: file://./sinks/detection_sink.py
@@ -78,7 +100,27 @@ sinks:
     input:
         id: PoseMessage
         type: usize
+  - id: LanenetDetectionSink
+    uri: file://./sinks/lanenet_detection_sink.py
+    input:
+        id: LanesMessage
+        type: usize
+
 links:
+
+- from:
+    node : LanenetDetectionSrc
+    output : laneMsg
+  to:
+    node : LanenetDetectionOperator
+    input : laneMsg
+- from:
+    node : LanenetDetectionOperator
+    output : LanesMessage
+  to:
+    node : LanenetDetectionSink
+    input : LanesMessage
+
 - from:
     node : localizationSrc
     output : localizationMsg
