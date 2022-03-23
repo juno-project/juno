@@ -45,6 +45,14 @@ operators:
     outputs:
       - id: ObstaclesWithLocationMsg
         type: usize
+  - id: ObstacleLocationHistoryOperator
+    uri: file://./pylot/perception/tracking/obstacle_location_history_operator.py
+    inputs:
+      - id: ObstaclesMsg
+        type: usize
+    outputs:
+      - id: ObstacleTrajectoriesMsg
+        type: usize
 
   - id: LanenetDetectionOperator
     uri: file://./pylot/perception/detection/lanenet_detection_operator.py
@@ -92,7 +100,16 @@ sources:
     output:
       id: ObstaclesMsg
       type: usize
-
+  - id: ObstacleLocationHistorySrc
+    uri: file://./sources/obstacle_location_history_source.py
+    configuration:
+      image_path: ./data/center-8711.png
+      depth_msg: ./test_data/ObstacleLocationHistoryOperator/input/depth_msg-5565.pkl
+      obstacles_msg: ./test_data/ObstacleLocationHistoryOperator/input/obstacle_tracking_msg-5565.pkl
+      vehicle_transform: ./test_data/ObstacleLocationHistoryOperator/input/vehicle_transform-5565.pkl
+    output:
+      id: ObstaclesMsg
+      type: usize
 
   - id: LanenetDetectionSrc
     uri: file://./sources/lanenet_detection_source.py
@@ -121,6 +138,11 @@ sinks:
     uri: file://./sinks/obstacle_location_finder_sink.py
     input:
         id: ObstaclesWithLocationMsg
+        type: usize
+  - id : ObstacleLocationHistorySink
+    uri: file://./sinks/obstacle_location_history_sink.py
+    input:
+        id: ObstacleTrajectoriesMsg
         type: usize
   - id: LanenetDetectionSink
     uri: file://./sinks/lanenet_detection_sink.py
@@ -196,3 +218,15 @@ links:
     node : ObstacleLocationFinderSink
     input : ObstaclesWithLocationMsg
 
+- from:
+    node : ObstacleLocationHistorySrc
+    output : ObstaclesMsg
+  to:
+    node : ObstacleLocationHistoryOperator
+    input : ObstaclesMsg
+- from:
+    node : ObstacleLocationHistoryOperator
+    output : ObstacleTrajectoriesMsg
+  to:
+    node : ObstacleLocationHistorySink
+    input : ObstacleTrajectoriesMsg
