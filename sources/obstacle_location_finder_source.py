@@ -1,4 +1,3 @@
-
 import sys
 
 sys.path.append('/home/zenoh-flow-auto-driving/')
@@ -25,7 +24,8 @@ class MyState:
         print("init state")
         self.timestamp = 0
         self.depth_msg_path=cfg['depth_msg']
-        self.obstacles_msg_path=cfg['obstacles_msg']
+        print(self.depth_msg_path)
+        self.obstacles_msg_path=cfg['obstacles_msg'] 
         self.vehicle_transform_path=cfg['vehicle_transform']
         src = cv2.imread(cfg['image_path'])
         self.value = src

@@ -2,59 +2,59 @@
 uuid: 00000000-0000-0000-0000-000000000000
 flow: AutoDrivingPipeline
 operators:
-  ObstacleLocationFinderOperator:
-    id: ObstacleLocationFinderOperator
+  ObstacleLocationHistoryOperator:
+    id: ObstacleLocationHistoryOperator
     inputs:
       - port_id: ObstaclesMsg
         port_type: usize
     outputs:
-      - port_id: ObstaclesWithLocationMsg
+      - port_id: ObstacleTrajectoriesMsg
         port_type: usize
-    uri: "file://./pylot/perception/detection/obstacle_location_finder_operator.py"
+    uri: "file://./pylot/perception/tracking/obstacle_location_history_operator.py"
     configuration: ~
     deadline: ~
     runtime: foo
     ciclo: ~
 sinks:
-  ObstacleLocationFinderSink:
-    id: ObstacleLocationFinderSink
+  ObstacleLocationHistorySink:
+    id: ObstacleLocationHistorySink
     input:
-      port_id: ObstaclesWithLocationMsg
+      port_id: ObstacleTrajectoriesMsg
       port_type: usize
-    uri: "file://./sinks/obstacle_location_finder_sink.py"
+    uri: "file://./sinks/obstacle_location_history_sink.py"
     configuration: ~
     runtime: foo
 sources:
-  ObstacleLocationFinderSrc:
-    id: ObstacleLocationFinderSrc
+  ObstacleLocationHistorySrc:
+    id: ObstacleLocationHistorySrc
     output:
       port_id: ObstaclesMsg
       port_type: usize
     period: ~
-    uri: "file://./sources/obstacle_location_finder_source.py"
+    uri: "file://./sources/obstacle_location_history_source.py"
     configuration:
-      depth_msg: "./test_data/ObstacleLocationFinderOperator/input/depth_msg-5734.pkl"
+      depth_msg: "./test_data/ObstacleLocationHistoryOperator/input/depth_msg-5565.pkl"
       image_path: "./data/center-8711.png"
-      obstacles_msg: "./test_data/ObstacleLocationFinderOperator/input/obstacles_msg-5734.pkl"
-      vehicle_transform: "./test_data/ObstacleLocationFinderOperator/input/vehicle_transform-5734.pkl"
+      obstacles_msg: "./test_data/ObstacleLocationHistoryOperator/input/obstacle_tracking_msg-5565.pkl"
+      vehicle_transform: "./test_data/ObstacleLocationHistoryOperator/input/vehicle_transform-5565.pkl"
     runtime: foo
 connectors: []
 links:
   - from:
-      node: ObstacleLocationFinderSrc
+      node: ObstacleLocationHistorySrc
       output: ObstaclesMsg
     to:
-      node: ObstacleLocationFinderOperator
+      node: ObstacleLocationHistoryOperator
       input: ObstaclesMsg
     size: ~
     queueing_policy: ~
     priority: ~
   - from:
-      node: ObstacleLocationFinderOperator
-      output: ObstaclesWithLocationMsg
+      node: ObstacleLocationHistoryOperator
+      output: ObstacleTrajectoriesMsg
     to:
-      node: ObstacleLocationFinderSink
-      input: ObstaclesWithLocationMsg
+      node: ObstacleLocationHistorySink
+      input: ObstacleTrajectoriesMsg
     size: ~
     queueing_policy: ~
     priority: ~
