@@ -1,77 +1,77 @@
 flow: AutoDrivingPipeline
 operators:
-#   - id : DetectionOperator
-#     uri: file://./pylot/perception/detection/detection_operator.py
-#     configuration:
-#       obstacle_detection_gpu_index: 0
-#       model_path: ./dependencies/models/obstacle_detection/faster-rcnn/
-#       path_coco_labels: ./dependencies/models/pylot.names
-#       obstacle_detection_min_score_threshold: 3
-#       log_detector_output: true
-#       out_path: ./out_data/
-#     inputs:
-#       - id: FrameMsg
-#         type: usize
-#     outputs:
-#       - id: ObstaclesMsg
-#         type: usize
-#   - id : TrafficLightDetOperator
-#     uri: file://./pylot/perception/detection/traffic_light_det_operator.py
-#     configuration:
-#       traffic_light_det_gpu_index: 0
-#       model_path: ./dependencies/models/traffic_light_detection/faster-rcnn/
-#       traffic_light_det_min_score_threshold: 3
-#       log_traffic_light_detector_output: true
-#       out_path: ./out_data/
-#     inputs:
-#       - id: FrameMsg
-#         type: usize
-#     outputs:
-#       - id: TrafficLightsMsg
-#         type: usize
-#   - id: LocalizationOperator
-#     uri: file://./pylot/localization/localization_operator.py
-#     inputs:
-#       - id: localizationMsg
-#         type: usize
-#     outputs:
-#       - id: PoseMessage
-#         type: usize
-#  - id: ObstacleLocationFinderOperator
-#    uri: file://./pylot/perception/detection/obstacle_location_finder_operator.py
-#    inputs:
-#      - id: ObstaclesMsg
-#        type: usize
-#    outputs:
-#      - id: ObstaclesWithLocationMsg
-#        type: usize
-#
-#  - id: LanenetDetectionOperator
-#    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
-#    configuration:
-#      lane_detection_gpu_index: 0
-#      lane_detection_gpu_memory_fraction: 3
-#      lanenet_detection_model_path:  /home/erdos/zenoh-flow-auto-driving/pylot/dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
-#    inputs:
-#      - id: laneMsg
-#        type: usize
-#    outputs:
-#      - id: LanesMessage
-#        type: usize
-#
-#   - id: behaviorPlanningOperator
-#     uri: file://./pylot/planning/behavior_planning_operator.py
-#     configuration:
-#         goal_location_x: 234
-#         goal_location_y: 59
-#         goal_location_z: 39
-#         log_file_name: pylot.log
-#     inputs:
-#         - id:  behaviorMsg
-#           type: usize
-#     outputs:
-#         - id: behaviorPlanningMsg
-#           type: usize
+   - id : DetectionOperator
+     uri: file://./pylot/perception/detection/detection_operator.py
+     configuration:
+       obstacle_detection_gpu_index: 0
+       model_path: ./dependencies/models/obstacle_detection/faster-rcnn/
+       path_coco_labels: ./dependencies/models/pylot.names
+       obstacle_detection_min_score_threshold: 3
+       log_detector_output: true
+       out_path: ./out_data/
+     inputs:
+       - id: FrameMsg
+         type: usize
+     outputs:
+       - id: ObstaclesMsg
+         type: usize
+   - id : TrafficLightDetOperator
+     uri: file://./pylot/perception/detection/traffic_light_det_operator.py
+     configuration:
+       traffic_light_det_gpu_index: 0
+       model_path: ./dependencies/models/traffic_light_detection/faster-rcnn/
+       traffic_light_det_min_score_threshold: 3
+       log_traffic_light_detector_output: true
+       out_path: ./out_data/
+     inputs:
+       - id: FrameMsg
+         type: usize
+     outputs:
+       - id: TrafficLightsMsg
+         type: usize
+   - id: LocalizationOperator
+     uri: file://./pylot/localization/localization_operator.py
+     inputs:
+       - id: localizationMsg
+         type: usize
+     outputs:
+       - id: PoseMessage
+         type: usize
+  - id: ObstacleLocationFinderOperator
+    uri: file://./pylot/perception/detection/obstacle_location_finder_operator.py
+    inputs:
+      - id: ObstaclesMsg
+        type: usize
+    outputs:
+      - id: ObstaclesWithLocationMsg
+        type: usize
+
+  - id: LanenetDetectionOperator
+    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
+    configuration:
+      lane_detection_gpu_index: 0
+      lane_detection_gpu_memory_fraction: 3
+      lanenet_detection_model_path:  /home/erdos/zenoh-flow-auto-driving/pylot/dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
+    inputs:
+      - id: laneMsg
+        type: usize
+    outputs:
+      - id: LanesMessage
+        type: usize
+
+   - id: behaviorPlanningOperator
+     uri: file://./pylot/planning/behavior_planning_operator.py
+     configuration:
+         goal_location_x: 234
+         goal_location_y: 59
+         goal_location_z: 39
+         log_file_name: pylot.log
+     inputs:
+         - id:  behaviorMsg
+           type: usize
+     outputs:
+         - id: behaviorPlanningMsg
+           type: usize
 
    - id: linearPredictorOperator
      uri: file://./pylot/prediction/linear_predictor_operator.py
@@ -86,57 +86,57 @@ operators:
        - id: linearPredictorMsg
          type: usize
 sources:
-#   - id : DetectionSrc
-#     uri: file://./sources/detection_source.py
-#     configuration:
-#       image_path: ./data/perfect-detector-6901.png
-#     output:
-#         id: FrameMsg
-#         type: usize
-#   - id:  TrafficLightSrc
-#     uri: file://./sources/traffic_light_det_source.py
-#     configuration:
-#       image_path: ./data/center-8711.png
-#     output:
-#         id: FrameMsg
-#         type: usize
-#   - id: localizationSrc
-#     uri: file://./sources/localization_source.py
-#     configuration:
-#       gnss_path: ./test_data/LocalizationOperator/input/gnss/gnss-5643.pkl
-#       imu_path: ./test_data/LocalizationOperator/input/imu/imu-5643.pkl
-#       pose_path: ./test_data/LocalizationOperator/input/pose/pose-5643.pkl
-#     output:
-#       id: localizationMsg
-#       type: usize
-#  - id: ObstacleLocationFinderSrc
-#    uri: file://./sources/obstacle_location_finder_source.py
-#    configuration:
-#      image_path: ./data/center-8711.png
-#      depth_msg: ./test_data/ObstacleLocationFinderOperator/input/depth_msg-5734.pkl
-#      obstacles_msg: ./test_data/ObstacleLocationFinderOperator/input/obstacles_msg-5734.pkl
-#      vehicle_transform: ./test_data/ObstacleLocationFinderOperator/input/vehicle_transform-5734.pkl
-#    output:
-#      id: ObstaclesMsg
-#      type: usize
-#
-#
-#  - id: LanenetDetectionSrc
-#    uri: file://./sources/lanenet_detection_source.py
-#    configuration:
-#       image_path: ./test_data/LaneDetectionOperator/input/lane-raw-lanenet_lane_detection-6871.png
-#    output:
-#       id: laneMsg
-#       type: usize
-#
-#  - id: behaviorPlanningSrc
-#    uri: file://./sources/behavior_planning_source.py
-#    configuration:
-#      open_drive_path: ./test_data/BehaviorPlanningOperator/input/open_drive_msg-0.pkl
-#      vehicle_transform_path: ./test_data/BehaviorPlanningOperator/input/vehicle_transform-5855.pkl
-#    output:
-#      id: behaviorMsg
-#      type: usize
+   - id : DetectionSrc
+     uri: file://./sources/detection_source.py
+     configuration:
+       image_path: ./data/perfect-detector-6901.png
+     output:
+         id: FrameMsg
+         type: usize
+   - id:  TrafficLightSrc
+     uri: file://./sources/traffic_light_det_source.py
+     configuration:
+       image_path: ./data/center-8711.png
+     output:
+         id: FrameMsg
+         type: usize
+   - id: localizationSrc
+     uri: file://./sources/localization_source.py
+     configuration:
+       gnss_path: ./test_data/LocalizationOperator/input/gnss/gnss-5643.pkl
+       imu_path: ./test_data/LocalizationOperator/input/imu/imu-5643.pkl
+       pose_path: ./test_data/LocalizationOperator/input/pose/pose-5643.pkl
+     output:
+       id: localizationMsg
+       type: usize
+  - id: ObstacleLocationFinderSrc
+    uri: file://./sources/obstacle_location_finder_source.py
+    configuration:
+      image_path: ./data/center-8711.png
+      depth_msg: ./test_data/ObstacleLocationFinderOperator/input/depth_msg-5734.pkl
+      obstacles_msg: ./test_data/ObstacleLocationFinderOperator/input/obstacles_msg-5734.pkl
+      vehicle_transform: ./test_data/ObstacleLocationFinderOperator/input/vehicle_transform-5734.pkl
+    output:
+      id: ObstaclesMsg
+      type: usize
+
+
+  - id: LanenetDetectionSrc
+    uri: file://./sources/lanenet_detection_source.py
+    configuration:
+       image_path: ./test_data/LaneDetectionOperator/input/lane-raw-lanenet_lane_detection-6871.png
+    output:
+       id: laneMsg
+       type: usize
+
+  - id: behaviorPlanningSrc
+    uri: file://./sources/behavior_planning_source.py
+    configuration:
+      open_drive_path: ./test_data/BehaviorPlanningOperator/input/open_drive_msg-0.pkl
+      vehicle_transform_path: ./test_data/BehaviorPlanningOperator/input/vehicle_transform-5855.pkl
+    output:
+      id: behaviorMsg
+      type: usize
 
   - id: linearPredictorSrc
     uri: file://./sources/linear_predictor_source.py
@@ -147,36 +147,36 @@ sources:
       type: usize
 
 sinks:
-#   - id : DetectionSink
-#     uri: file://./sinks/detection_sink.py
-#     input:
-#         id: ObstaclesMsg
-#         type: usize
-#   - id : TrafficLightSink
-#     uri: file://./sinks/traffic_light_det_sink.py
-#     input:
-#         id: TrafficLightsMsg
-#         type: usize
-#   - id : LocalizationSink
-#     uri: file://./sinks/localization_sink.py
-#     input:
-#         id: PoseMessage
-#         type: usize
-#  - id : ObstacleLocationFinderSink
-#    uri: file://./sinks/obstacle_location_finder_sink.py
-#    input:
-#        id: ObstaclesWithLocationMsg
-#        type: usize
-#  - id: LanenetDetectionSink
-#    uri: file://./sinks/lanenet_detection_sink.py
-#    input:
-#        id: LanesMessage
-#        type: usize
-#  - id: behaviorPlanningSink
-#    uri: file://./sinks/behavior_planning_sink.py
-#    input:
-#       id: behaviorPlanningMsg
-#       type: usize
+   - id : DetectionSink
+     uri: file://./sinks/detection_sink.py
+     input:
+         id: ObstaclesMsg
+         type: usize
+   - id : TrafficLightSink
+     uri: file://./sinks/traffic_light_det_sink.py
+     input:
+         id: TrafficLightsMsg
+         type: usize
+   - id : LocalizationSink
+     uri: file://./sinks/localization_sink.py
+     input:
+         id: PoseMessage
+         type: usize
+  - id : ObstacleLocationFinderSink
+    uri: file://./sinks/obstacle_location_finder_sink.py
+    input:
+        id: ObstaclesWithLocationMsg
+        type: usize
+  - id: LanenetDetectionSink
+    uri: file://./sinks/lanenet_detection_sink.py
+    input:
+        id: LanesMessage
+        type: usize
+  - id: behaviorPlanningSink
+    uri: file://./sinks/behavior_planning_sink.py
+    input:
+       id: behaviorPlanningMsg
+       type: usize
 
   - id: linearPredictorSink
     uri: file://./sinks/linear_predictor_sink.py
@@ -185,86 +185,86 @@ sinks:
        type: usize
 links:
 
-#- from:
-#    node : LanenetDetectionSrc
-#    output : laneMsg
-#  to:
-#    node : LanenetDetectionOperator
-#    input : laneMsg
-#- from:
-#    node : LanenetDetectionOperator
-#    output : LanesMessage
-#  to:
-#    node : LanenetDetectionSink
-#    input : LanesMessage
-#
-#- from:
-#    node : localizationSrc
-#    output : localizationMsg
-#  to:
-#    node : LocalizationOperator
-#    input : localizationMsg
-#- from:
-#    node : LocalizationOperator
-#    output : PoseMessage
-#  to:
-#    node : LocalizationSink
-#    input : PoseMessage
-#
-#
-# - from:
-#     node : DetectionSrc
-#     output : FrameMsg
-#   to:
-#     node : DetectionOperator
-#     input : FrameMsg
-# - from:
-#     node : DetectionOperator
-#     output : ObstaclesMsg
-#   to:
-#     node : DetectionSink
-#     input : ObstaclesMsg
-#
-# - from:
-#     node : TrafficLightSrc
-#     output : FrameMsg
-#   to:
-#     node : TrafficLightDetOperator
-#     input : FrameMsg
-# - from:
-#     node : TrafficLightDetOperator
-#     output : TrafficLightsMsg
-#   to:
-#     node : TrafficLightSink
-#     input : TrafficLightsMsg
-#
-#- from:
-#    node : ObstacleLocationFinderSrc
-#    output : ObstaclesMsg
-#  to:
-#    node : ObstacleLocationFinderOperator
-#    input : ObstaclesMsg
-#- from:
-#    node : ObstacleLocationFinderOperator
-#    output : ObstaclesWithLocationMsg
-#  to:
-#    node : ObstacleLocationFinderSink
-#    input : ObstaclesWithLocationMsg
-#
-#
-#- from:
-#    node : behaviorPlanningSrc
-#    output : behaviorMsg
-#  to:
-#    node : behaviorPlanningOperator
-#    input : behaviorMsg
-#- from:
-#    node : behaviorPlanningOperator
-#    output : behaviorPlanningMsg
-#  to:
-#    node : behaviorPlanningSink
-#    input : behaviorPlanningMsg
-#
+- from:
+    node : LanenetDetectionSrc
+    output : laneMsg
+  to:
+    node : LanenetDetectionOperator
+    input : laneMsg
+- from:
+    node : LanenetDetectionOperator
+    output : LanesMessage
+  to:
+    node : LanenetDetectionSink
+    input : LanesMessage
+
+- from:
+    node : localizationSrc
+    output : localizationMsg
+  to:
+    node : LocalizationOperator
+    input : localizationMsg
+- from:
+    node : LocalizationOperator
+    output : PoseMessage
+  to:
+    node : LocalizationSink
+    input : PoseMessage
+
+
+ - from:
+     node : DetectionSrc
+     output : FrameMsg
+   to:
+     node : DetectionOperator
+     input : FrameMsg
+ - from:
+     node : DetectionOperator
+     output : ObstaclesMsg
+   to:
+     node : DetectionSink
+     input : ObstaclesMsg
+
+ - from:
+     node : TrafficLightSrc
+     output : FrameMsg
+   to:
+     node : TrafficLightDetOperator
+     input : FrameMsg
+ - from:
+     node : TrafficLightDetOperator
+     output : TrafficLightsMsg
+   to:
+     node : TrafficLightSink
+     input : TrafficLightsMsg
+
+- from:
+    node : ObstacleLocationFinderSrc
+    output : ObstaclesMsg
+  to:
+    node : ObstacleLocationFinderOperator
+    input : ObstaclesMsg
+- from:
+    node : ObstacleLocationFinderOperator
+    output : ObstaclesWithLocationMsg
+  to:
+    node : ObstacleLocationFinderSink
+    input : ObstaclesWithLocationMsg
+
+
+- from:
+    node : behaviorPlanningSrc
+    output : behaviorMsg
+  to:
+    node : behaviorPlanningOperator
+    input : behaviorMsg
+- from:
+    node : behaviorPlanningOperator
+    output : behaviorPlanningMsg
+  to:
+    node : behaviorPlanningSink
+    input : behaviorPlanningMsg
+
 
 - from:
     node : linearPredictorSrc
