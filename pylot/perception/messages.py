@@ -183,7 +183,7 @@ class ObstaclePositionsSpeedsMessage(erdos.Message):
                                         self.obstacle_positions_speeds))
 
 
-class ObstacleTrajectoriesMessage(erdos.Message):
+class ObstacleTrajectoriesMessage():
     """Message to be used to send obstacle trajectory info.
 
     Args:
@@ -197,7 +197,7 @@ class ObstacleTrajectoriesMessage(erdos.Message):
             Obstacle trajectories.
     """
     def __init__(self, timestamp, obstacle_trajectories):
-        super(ObstacleTrajectoriesMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         self.obstacle_trajectories = obstacle_trajectories
 
     def __repr__(self):

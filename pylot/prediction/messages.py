@@ -1,7 +1,7 @@
 import erdos
 
 
-class PredictionMessage(erdos.Message):
+class PredictionMessage():
     """Message class to be used to send obstacle predictions.
 
     Args:
@@ -15,7 +15,7 @@ class PredictionMessage(erdos.Message):
             Obstacle predictions.
     """
     def __init__(self, timestamp: erdos.Timestamp, predictions):
-        super(PredictionMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         self.predictions = predictions
 
     def __repr__(self):
