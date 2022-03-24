@@ -211,3 +211,4 @@ class Waypoints(object):
             #     world.debug.draw_string(loc,
             #                             str(self.road_options[index]),
             #                             life_time=DEFAULT_VIS_TIME)
+
