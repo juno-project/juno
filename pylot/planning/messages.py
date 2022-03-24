@@ -1,7 +1,7 @@
 import erdos
 
 
-class WaypointsMessage(erdos.Message):
+class WaypointsMessage():
     """Message class to be used to send waypoints.
 
     Optionally can also send a target speed for each waypoint.
@@ -12,10 +12,10 @@ class WaypointsMessage(erdos.Message):
         waypoints (:py:class:`~pylot.planning.Waypoints`): Waypoints.
     """
     def __init__(self,
-                 timestamp: erdos.Timestamp,
+                 timestamp,
                  waypoints,
                  agent_state=None):
-        super(WaypointsMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         self.waypoints = waypoints
         self.agent_state = agent_state
 

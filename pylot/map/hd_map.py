@@ -3,10 +3,11 @@
 This module implements HDMap class which offers utility methods for interacting
 with the CARLA HD map.
 """
-
+import sys
 from collections import deque
 
 # Import Planner from CARLA codebase
+sys.path.append('/home/erdos/zenoh-flow-auto-driving/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla')
 from agents.navigation.global_route_planner import GlobalRoutePlanner
 from agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
 

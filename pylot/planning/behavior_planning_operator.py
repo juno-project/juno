@@ -1,6 +1,6 @@
+import pickle
+import time
 from collections import deque
-
-import erdos
 
 import numpy as np
 
@@ -9,9 +9,10 @@ import pylot.utils
 from pylot.planning.messages import WaypointsMessage
 from pylot.planning.utils import BehaviorPlannerState
 from pylot.planning.waypoints import Waypoints
+from zenoh_flow import Inputs, Operator, Outputs
 
 
-class BehaviorPlanningOperator(erdos.Operator):
+class BehaviorPlanningState:
     """Behavior planning operator.
 
     Args:
@@ -28,23 +29,20 @@ class BehaviorPlanningOperator(erdos.Operator):
         goal_location (:py:class:`~pylot.utils.Location`): The goal location of
             the ego vehicle.
     """
-    def __init__(self,
-                 pose_stream: erdos.ReadStream,
-                 open_drive_stream: erdos.ReadStream,
-                 route_stream: erdos.ReadStream,
-                 trajectory_stream: erdos.WriteStream,
-                 flags,
-                 goal_location: pylot.utils.Location = None):
-        pose_stream.add_callback(self.on_pose_update)
-        open_drive_stream.add_callback(self.on_opendrive_map)
-        route_stream.add_callback(self.on_route_msg)
-        erdos.add_watermark_callback(
-            [pose_stream, open_drive_stream, route_stream],
-            [trajectory_stream], self.on_watermark)
+    def __init__(self, cfg):
 
-        self._logger = erdos.utils.setup_logging(self.config.name,
-                                                 self.config.log_file_name)
-        self._flags = flags
+        # pose_stream.add_callback(self.on_pose_update)
+        # open_drive_stream.add_callback(self.on_opendrive_map)
+        # route_stream.add_callback(self.on_route_msg)
+        # erdos.add_watermark_callback(
+        #     [pose_stream, open_drive_stream, route_stream],
+        #     [trajectory_stream], self.on_watermark)
+        # flags.DEFINE_list('goal_location', '234, 59, 39', 'Ego-vehicle goal location')
+        print("operator init......................")
+        self.cfg = cfg
+        goal_location = pylot.utils.Location(cfg['goal_location_x'],
+                                             cfg['goal_location_y'],
+                                             cfg['goal_location_z'])
         # Do not set the goal location here so that the behavior planner
         # issues an initial message.
         self._goal_location = None
@@ -62,100 +60,40 @@ class BehaviorPlanningOperator(erdos.Operator):
             self._route = None
         self._map = None
 
-    @staticmethod
-    def connect(pose_stream: erdos.ReadStream,
-                open_drive_stream: erdos.ReadStream,
-                route_stream: erdos.ReadStream):
-        trajectory_stream = erdos.WriteStream()
-        return [trajectory_stream]
-
-    def destroy(self):
-        self._logger.warn('destroying {}'.format(self.config.name))
-
-    def on_opendrive_map(self, msg: erdos.Message):
+    def on_opendrive_map(self, msg, timestamp):
         """Invoked whenever a message is received on the open drive stream.
 
         Args:
             msg (:py:class:`~erdos.message.Message`): Message that contains
                 the open drive string.
         """
-        self._logger.debug('@{}: received open drive message'.format(
-            msg.timestamp))
+        print("on_opendrive_map....................")
+        print('@{}: received open drive message'.format(timestamp))
         from pylot.simulation.utils import map_from_opendrive
-        self._map = map_from_opendrive(msg.data, self.config.log_file_name)
+        self._map = map_from_opendrive(msg.data, self.cfg['log_file_name'])
 
-    def on_route_msg(self, msg: erdos.Message):
+    def on_route_msg(self, msg):
         """Invoked whenever a message is received on the trajectory stream.
 
         Args:
             msg (:py:class:`~erdos.message.Message`): Message that contains
                 a list of waypoints to the goal location.
         """
-        self._logger.debug('@{}: global trajectory has {} waypoints'.format(
+        print('@{}: global trajectory has {} waypoints'.format(
             msg.timestamp, len(msg.waypoints.waypoints)))
         print('111', msg.waypoints.waypoints)
         self._route = msg.waypoints
 
-    def on_pose_update(self, msg: erdos.Message):
+    def on_pose_update(self, msg, timestamp):
         """Invoked whenever a message is received on the pose stream.
 
         Args:
             msg (:py:class:`~erdos.message.Message`): Message that contains
                 info about the ego vehicle.
         """
-        self._logger.debug('@{}: received pose message'.format(msg.timestamp))
+        print("on_pose_update.....................")
+        print('@{}: received pose message'.format(timestamp))
         self._pose_msgs.append(msg)
-
-    @erdos.profile_method()
-    def on_watermark(self, timestamp: erdos.Timestamp,
-                     trajectory_stream: erdos.WriteStream):
-        self._logger.debug('@{}: received watermark'.format(timestamp))
-        if timestamp.is_top:
-            return
-        pose_msg = self._pose_msgs.popleft()
-        ego_transform = pose_msg.data.transform
-        self._ego_info.update(self._state, pose_msg)
-        old_state = self._state
-        self._state = self.__best_state_transition(self._ego_info)
-        self._logger.debug('@{}: agent transitioned from {} to {}'.format(
-            timestamp, old_state, self._state))
-        # Remove the waypoint from the route if we're close to it.
-        if (old_state != self._state
-                and self._state == BehaviorPlannerState.OVERTAKE):
-            self._route.remove_waypoint_if_close(ego_transform.location, 10)
-        else:
-            if not self._map.is_intersection(ego_transform.location):
-                self._route.remove_waypoint_if_close(ego_transform.location,
-                                                     10)
-            else:
-                self._route.remove_waypoint_if_close(ego_transform.location, 3)
-        new_goal_location = self.__get_goal_location(ego_transform)
-        if new_goal_location != self._goal_location:
-            self._goal_location = new_goal_location
-            if self._map:
-                # Use the map to compute more fine-grained waypoints.
-                waypoints = self._map.compute_waypoints(
-                    ego_transform.location, self._goal_location)
-                road_options = deque([
-                    pylot.utils.RoadOption.LANE_FOLLOW
-                    for _ in range(len(waypoints))
-                ])
-                waypoints = Waypoints(waypoints, road_options=road_options)
-            else:
-                # Map is not available, send the route.
-                waypoints = self._route
-            if not waypoints or waypoints.is_empty():
-                # If waypoints are empty (e.g., reached destination), set
-                # waypoints to current vehicle location.
-                waypoints = Waypoints(
-                    deque([ego_transform]),
-                    road_options=deque([pylot.utils.RoadOption.LANE_FOLLOW]))
-            trajectory_stream.send(
-                WaypointsMessage(timestamp, waypoints, self._state))
-        elif old_state != self._state:
-            # Send the state update.
-            trajectory_stream.send(
-                WaypointsMessage(timestamp, None, self._state))
 
 
     def __initialize_behaviour_planner(self):
@@ -221,7 +159,7 @@ class BehaviorPlanningOperator(erdos.Operator):
         else:
             raise ValueError('Unexpected vehicle state {}'.format(self._state))
 
-    def __best_state_transition(self, ego_info):
+    def best_state_transition(self, ego_info):
         """ Computes most likely state transition from current state."""
         # Get possible next state machine states.
         possible_next_states = self.__successor_states()
@@ -240,7 +178,7 @@ class BehaviorPlanningOperator(erdos.Operator):
                 min_state_cost = state_cost
         return best_next_state
 
-    def __get_goal_location(self, ego_transform: pylot.utils.Transform):
+    def get_goal_location(self, ego_transform: pylot.utils.Transform):
         if len(self._route.waypoints) > 1:
             dist = ego_transform.location.distance(
                 self._route.waypoints[0].location)
@@ -250,9 +188,101 @@ class BehaviorPlanningOperator(erdos.Operator):
                 new_goal_location = self._route.waypoints[0].location
         elif len(self._route.waypoints) == 1:
             new_goal_location = self._route.waypoints[0].location
+            print("get_goal_location  new_goal_location : {}".format(new_goal_location))
         else:
             new_goal_location = ego_transform.location
         return new_goal_location
+
+
+
+class BehaviorPlanningOperator(Operator):
+    def initialize(self, configuration):
+         return BehaviorPlanningState(configuration)
+
+    def finalize(self, state):
+        return None
+
+    def input_rule(self, _ctx, state, tokens):
+        # Using input rules
+
+        token = tokens.get('behaviorMsg').get_data()
+        msg = pickle.loads(bytes(token))
+
+        open_drive = msg['open_drive']
+        vehicle_transform = msg['vehicle_transform']
+        timestamp = msg['timestamp']
+
+        state.on_pose_update(vehicle_transform, timestamp)
+        # print(open_drive)
+        state.on_opendrive_map(open_drive, timestamp)
+        return True
+
+    def output_rule(self, _ctx, state, outputs, _deadline_miss):
+        return outputs
+
+    def run(self, _ctx, state, inputs):
+        msg = inputs.get("behaviorMsg").data
+        # print("@: inputs:  {}".format(msg))
+        msg = pickle.loads(msg)
+
+        # # Retrieve the messages for this timestamp
+        timestamp = msg['timestamp']
+
+        print('@{}: received watermark'.format(timestamp))
+
+        # return {'behaviorPlanningMsg': pickle.dumps("test")}
+        # if timestamp.is_top:
+        #     return
+        pose_msg = state._pose_msgs.popleft()
+        print("pose_msg: {}".format(pose_msg))
+        ego_transform = pose_msg
+
+        state._ego_info.update(state._state, pose_msg)
+        old_state = state._state
+        state._state = state.best_state_transition(state._ego_info)
+        print('@{}: agent transitioned from {} to {}'.format(
+            timestamp, old_state, state._state))
+        # Remove the waypoint from the route if we're close to it.
+        if (old_state != state._state
+                and state._state == BehaviorPlannerState.OVERTAKE):
+            state._route.remove_waypoint_if_close(ego_transform.location, 10)
+        else:
+            if not state._map.is_intersection(ego_transform.location):
+                state._route.remove_waypoint_if_close(ego_transform.location,
+                                                     10)
+            else:
+                state._route.remove_waypoint_if_close(ego_transform.location, 3)
+
+        new_goal_location = state.get_goal_location(ego_transform)
+        if new_goal_location != state._goal_location:
+            state._goal_location = new_goal_location
+            if state._map:
+                # Use the map to compute more fine-grained waypoints.
+                waypoints = state._map.compute_waypoints(
+                    ego_transform.location, state._goal_location)
+                road_options = deque([
+                    pylot.utils.RoadOption.LANE_FOLLOW
+                    for _ in range(len(waypoints))
+                ])
+                waypoints = Waypoints(waypoints, road_options=road_options)
+            else:
+                # Map is not available, send the route.
+                waypoints = state._route
+            if not waypoints or waypoints.is_empty():
+                # If waypoints are empty (e.g., reached destination), set
+                # waypoints to current vehicle location.
+                waypoints = Waypoints(
+                    deque([ego_transform]),
+                    road_options=deque([pylot.utils.RoadOption.LANE_FOLLOW]))
+            return {"behaviorPlanningMsg": pickle.dumps(WaypointsMessage(timestamp, waypoints, state._state))}
+        elif old_state != state._state:
+            # Send the state update.
+            return {"behaviorPlanningMsg": pickle.dumps(WaypointsMessage(timestamp, None, state._state))}
+
+        return {"behaviorPlanningMsg": pickle.dumps(None)}
+
+
+
 
 
 class EgoInfo(object):
@@ -262,8 +292,14 @@ class EgoInfo(object):
         self.current_time = 0
 
     def update(self, state, pose_msg):
-        self.current_time = pose_msg.timestamp.coordinates[0]
-        if pose_msg.data.forward_speed >= 0.7:
-            self.last_time_moving = self.current_time
+        # self.current_time = pose_msg.timestamp.coordinates[0]
+        state.current_time = time.time()
+        # if pose_msg.data.forward_speed >= 0.7:
+        if 1 >= 0.7:
+            state.last_time_moving = state.current_time
         else:
-            self.last_time_stopped = self.current_time
+            state.last_time_stopped = state.current_time
+
+
+def register():
+    return BehaviorPlanningOperator
