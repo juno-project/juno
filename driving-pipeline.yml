@@ -58,20 +58,33 @@ operators:
 #    outputs:
 #      - id: LanesMessage
 #        type: usize
+#
+#   - id: behaviorPlanningOperator
+#     uri: file://./pylot/planning/behavior_planning_operator.py
+#     configuration:
+#         goal_location_x: 234
+#         goal_location_y: 59
+#         goal_location_z: 39
+#         log_file_name: pylot.log
+#     inputs:
+#         - id:  behaviorMsg
+#           type: usize
+#     outputs:
+#         - id: behaviorPlanningMsg
+#           type: usize
 
-   - id: behaviorPlanningOperator
-     uri: file://./pylot/planning/behavior_planning_operator.py
+   - id: linearPredictorOperator
+     uri: file://./pylot/prediction/linear_predictor_operator.py
      configuration:
-         goal_location_x: 234
-         goal_location_y: 59
-         goal_location_z: 39
-         log_file_name: pylot.log
+       prediction_radius: 50
+       prediction_num_past_steps: 10
+       prediction_num_future_steps: 10
      inputs:
-         - id:  behaviorMsg
-           type: usize
+       - id: linearMsg
+         type: usize
      outputs:
-         - id: behaviorPlanningMsg
-           type: usize
+       - id: linearPredictorMsg
+         type: usize
 sources:
 #   - id : DetectionSrc
 #     uri: file://./sources/detection_source.py
@@ -106,8 +119,8 @@ sources:
 #    output:
 #      id: ObstaclesMsg
 #      type: usize
-
-
+#
+#
 #  - id: LanenetDetectionSrc
 #    uri: file://./sources/lanenet_detection_source.py
 #    configuration:
@@ -115,14 +128,22 @@ sources:
 #    output:
 #       id: laneMsg
 #       type: usize
+#
+#  - id: behaviorPlanningSrc
+#    uri: file://./sources/behavior_planning_source.py
+#    configuration:
+#      open_drive_path: ./test_data/BehaviorPlanningOperator/input/open_drive_msg-0.pkl
+#      vehicle_transform_path: ./test_data/BehaviorPlanningOperator/input/vehicle_transform-5855.pkl
+#    output:
+#      id: behaviorMsg
+#      type: usize
 
-  - id: behaviorPlanningSrc
-    uri: file://./sources/behavior_planning_source.py
+  - id: linearPredictorSrc
+    uri: file://./sources/linear_predictor_source.py
     configuration:
-      open_drive_path: ./test_data/BehaviorPlanningOperator/input/open_drive_msg-0.pkl
-      vehicle_transform_path: ./test_data/BehaviorPlanningOperator/input/vehicle_transform-5855.pkl
+      tracked_obstacles_path: test_data/LinearPredictorOperator/input/tracked_obstacles_msg-5724.pkl
     output:
-      id: behaviorMsg
+      id: linearMsg
       type: usize
 
 sinks:
@@ -151,12 +172,17 @@ sinks:
 #    input:
 #        id: LanesMessage
 #        type: usize
-  - id: behaviorPlanningSink
-    uri: file://./sinks/behavior_planning_sink.py
-    input:
-       id: behaviorPlanningMsg
-       type: usize
+#  - id: behaviorPlanningSink
+#    uri: file://./sinks/behavior_planning_sink.py
+#    input:
+#       id: behaviorPlanningMsg
+#       type: usize
 
+  - id: linearPredictorSink
+    uri: file://./sinks/linear_predictor_sink.py
+    input:
+       id: linearPredictorMsg
+       type: usize
 links:
 
 #- from:
@@ -224,18 +250,31 @@ links:
 #  to:
 #    node : ObstacleLocationFinderSink
 #    input : ObstaclesWithLocationMsg
-
+#
+#
+#- from:
+#    node : behaviorPlanningSrc
+#    output : behaviorMsg
+#  to:
+#    node : behaviorPlanningOperator
+#    input : behaviorMsg
+#- from:
+#    node : behaviorPlanningOperator
+#    output : behaviorPlanningMsg
+#  to:
+#    node : behaviorPlanningSink
+#    input : behaviorPlanningMsg
+#
 
 - from:
-    node : behaviorPlanningSrc
-    output : behaviorMsg
+    node : linearPredictorSrc
+    output : linearMsg
   to:
-    node : behaviorPlanningOperator
-    input : behaviorMsg
+    node : linearPredictorOperator
+    input : linearMsg
 - from:
-    node : behaviorPlanningOperator
-    output : behaviorPlanningMsg
+    node : linearPredictorOperator
+    output : linearPredictorMsg
   to:
-    node : behaviorPlanningSink
-    input : behaviorPlanningMsg
-
+    node : linearPredictorSink
+    input : linearPredictorMsg
