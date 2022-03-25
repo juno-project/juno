@@ -6,13 +6,12 @@ from pylot.perception.tracking.multi_object_tracker import MultiObjectTracker
 
 
 class MultiObjectDeepSORTTracker(MultiObjectTracker):
-    def __init__(self, flags, logger):
-        self._logger = logger
+    def __init__(self, deep_sort_tracker_weights_path, obstacle_track_max_age, min_matching_iou):
         # Initialize the deepsort object, which has a tracker object within it
         self._deepsort = deepsort_rbc(
-            wt_path=flags.deep_sort_tracker_weights_path,
-            max_age=flags.obstacle_track_max_age,
-            min_iou=flags.min_matching_iou)
+            wt_path=deep_sort_tracker_weights_path,
+            max_age=obstacle_track_max_age,
+            min_iou=min_matching_iou)
 
     def reinitialize(self, frame, obstacles):
         """ Reinitializes a multiple obstacle tracker.
@@ -63,7 +62,7 @@ class MultiObjectDeepSORTTracker(MultiObjectTracker):
                     tracked_obstacles.append(
                         Obstacle(bbox, 0, track.label, track.track_id))
                 else:
-                    self._logger.error(
+                    print(
                         "Tracker found invalid bounding box {} {} {} {}".
                         format(xmin, xmax, ymin, ymax))
         return True, tracked_obstacles

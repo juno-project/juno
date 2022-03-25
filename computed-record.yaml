@@ -2,59 +2,62 @@
 uuid: 00000000-0000-0000-0000-000000000000
 flow: AutoDrivingPipeline
 operators:
-  ObstacleLocationHistoryOperator:
-    id: ObstacleLocationHistoryOperator
+  ObjectTrackerOperator:
+    id: ObjectTrackerOperator
     inputs:
-      - port_id: ObstaclesMsg
+      - port_id: ObjectMsg
         port_type: usize
     outputs:
-      - port_id: ObstacleTrajectoriesMsg
+      - port_id: ObstaclesMsg
         port_type: usize
-    uri: "file://./pylot/perception/tracking/obstacle_location_history_operator.py"
-    configuration: ~
+    uri: "file://./pylot/perception/tracking/object_tracker_operator.py"
+    configuration:
+      da_siam_rpn_model_path: dependencies/models/tracking/DASiamRPN/SiamRPNVOT.model
+      deep_sort_tracker_weights_path: dependencies/models/tracking/deep-sort-carla/feature_extractor
+      min_matching_iou: "0.5"
+      obstacle_track_max_age: 3
+      tracker_type: sort
     deadline: ~
     runtime: foo
     ciclo: ~
 sinks:
-  ObstacleLocationHistorySink:
-    id: ObstacleLocationHistorySink
+  ObjectTrackerSink:
+    id: ObjectTrackerSink
     input:
-      port_id: ObstacleTrajectoriesMsg
+      port_id: ObstaclesMsg
       port_type: usize
-    uri: "file://./sinks/obstacle_location_history_sink.py"
+    uri: "file://./sinks/object_tracker_sink.py"
     configuration: ~
     runtime: foo
 sources:
-  ObstacleLocationHistorySrc:
-    id: ObstacleLocationHistorySrc
+  ObjectTrackerSrc:
+    id: ObjectTrackerSrc
     output:
-      port_id: ObstaclesMsg
+      port_id: ObjectMsg
       port_type: usize
     period: ~
-    uri: "file://./sources/obstacle_location_history_source.py"
+    uri: "file://./sources/object_tracker_source.py"
     configuration:
-      depth_msg: "./test_data/ObstacleLocationHistoryOperator/input/depth_msg-5565.pkl"
-      image_path: "./data/center-8711.png"
-      obstacles_msg: "./test_data/ObstacleLocationHistoryOperator/input/obstacle_tracking_msg-5565.pkl"
-      vehicle_transform: "./test_data/ObstacleLocationHistoryOperator/input/vehicle_transform-5565.pkl"
+      frame_msg: "./test_data/ObstacleTrackerOperator/input/frame_msg-5534.pkl"
+      obstacles_msg: "./test_data/ObstacleTrackerOperator/input/obstacles_msg_out-5534.pkl"
     runtime: foo
 connectors: []
 links:
   - from:
-      node: ObstacleLocationHistorySrc
-      output: ObstaclesMsg
+      node: ObjectTrackerSrc
+      output: ObjectMsg
     to:
-      node: ObstacleLocationHistoryOperator
-      input: ObstaclesMsg
+      node: ObjectTrackerOperator
+      input: ObjectMsg
     size: ~
     queueing_policy: ~
     priority: ~
   - from:
-      node: ObstacleLocationHistoryOperator
-      output: ObstacleTrajectoriesMsg
+      node: ObjectTrackerOperator
+      output: ObstaclesMsg
     to:
-      node: ObstacleLocationHistorySink
-      input: ObstacleTrajectoriesMsg
+      node: ObjectTrackerSink
+      input: ObstaclesMsg
     size: ~
     queueing_policy: ~
     priority: ~

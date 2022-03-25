@@ -54,6 +54,21 @@ operators:
       - id: ObstacleTrajectoriesMsg
         type: usize
 
+  - id: ObjectTrackerOperator
+    uri: file://./pylot/perception/tracking/object_tracker_operator.py
+    configuration:
+      tracker_type: sort
+      min_matching_iou: '0.5'
+      obstacle_track_max_age: 3
+      da_siam_rpn_model_path: dependencies/models/tracking/DASiamRPN/SiamRPNVOT.model
+      deep_sort_tracker_weights_path: dependencies/models/tracking/deep-sort-carla/feature_extractor
+    inputs:
+      - id: ObjectMsg
+        type: usize
+    outputs:
+      - id: ObstaclesMsg
+        type: usize
+
   - id: LanenetDetectionOperator
     uri: file://./pylot/perception/detection/lanenet_detection_operator.py
     configuration:
@@ -137,6 +152,14 @@ sources:
     output:
       id: ObstaclesMsg
       type: usize
+  - id: ObjectTrackerSrc
+    uri: file://./sources/object_tracker_source.py
+    configuration:
+      frame_msg: ./test_data/ObstacleTrackerOperator/input/frame_msg-5534.pkl
+      obstacles_msg: ./test_data/ObstacleTrackerOperator/input/obstacles_msg_out-5534.pkl
+    output:
+      id: ObjectMsg
+      type: usize
 
   - id: LanenetDetectionSrc
     uri: file://./sources/lanenet_detection_source.py
@@ -188,6 +211,11 @@ sinks:
     uri: file://./sinks/obstacle_location_history_sink.py
     input:
         id: ObstacleTrajectoriesMsg
+        type: usize
+  - id : ObjectTrackerSink
+    uri: file://./sinks/object_tracker_sink.py
+    input:
+        id: ObstaclesMsg
         type: usize
   - id: LanenetDetectionSink
     uri: file://./sinks/lanenet_detection_sink.py
@@ -313,3 +341,16 @@ links:
   to:
     node : ObstacleLocationHistorySink
     input : ObstacleTrajectoriesMsg
+
+- from:
+    node : ObjectTrackerSrc
+    output : ObjectMsg
+  to:
+    node : ObjectTrackerOperator
+    input : ObjectMsg
+- from:
+    node : ObjectTrackerOperator
+    output : ObstaclesMsg
+  to:
+    node : ObjectTrackerSink
+    input : ObstaclesMsg

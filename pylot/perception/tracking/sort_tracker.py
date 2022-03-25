@@ -1,3 +1,8 @@
+import sys
+sys.path.append('/home/erdos/zenoh-flow-auto-driving/')
+sys.path.append('/home/erdos/zenoh-flow-auto-driving/dependencies')
+sys.path.append('/home/erdos/zenoh-flow-auto-driving/dependencies/sort')
+
 import numpy as np
 
 from pylot.perception.detection.obstacle import Obstacle
@@ -8,11 +13,10 @@ from sort.sort import Sort
 
 
 class MultiObjectSORTTracker(MultiObjectTracker):
-    def __init__(self, flags, logger):
-        self._logger = logger
-        self.tracker = Sort(max_age=flags.obstacle_track_max_age,
+    def __init__(self, obstacle_track_max_age, min_matching_iou):
+        self.tracker = Sort(max_age=obstacle_track_max_age,
                             min_hits=1,
-                            min_iou=flags.min_matching_iou)
+                            min_iou=min_matching_iou)
 
     def reinitialize(self, frame, obstacles):
         """ Reinitializes a multiple obstacle tracker.
@@ -46,7 +50,7 @@ class MultiObjectSORTTracker(MultiObjectTracker):
                 bbox = BoundingBox2D(xmin, xmax, ymin, ymax)
                 obstacles.append(Obstacle(bbox, 0, track.label, track.id))
             else:
-                self._logger.error(
+                print(
                     "Tracker found invalid bounding box {} {} {} {}".format(
                         xmin, xmax, ymin, ymax))
         return True, obstacles
