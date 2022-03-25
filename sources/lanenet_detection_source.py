@@ -1,9 +1,8 @@
 
 import sys
 sys.path.append('/home/erdos/zenoh-flow-auto-driving/')
-sys.path.append('/home/erdos/zenoh-flow-auto-driving/pylot/dependencies')
-sys.path.append('/home/erdos/zenoh-flow-auto-driving/pylot/dependencies/lanenet')
-sys.path.append('/home/erdos/zenoh-flow-auto-driving/pylot/dependencies/lanenet')
+sys.path.append('/home/erdos/zenoh-flow-auto-driving/dependencies')
+sys.path.append('/home/erdos/zenoh-flow-auto-driving/dependencies/lanenet')
 sys.path.append('/usr/lib/python3.8')
 sys.path.append('/home/test2/.local/lib/python3.8/site-packages')
 from zenoh_flow import Source
