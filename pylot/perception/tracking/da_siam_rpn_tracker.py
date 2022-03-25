@@ -60,16 +60,15 @@ class SingleObjectDaSiamRPNTracker(object):
 
 
 class MultiObjectDaSiamRPNTracker(MultiObjectTracker):
-    def __init__(self, flags, logger):
+    def __init__(self, da_siam_rpn_model_path, min_matching_iou, obstacle_track_max_age):
         # Initialize the siam network.
-        self._logger = logger
         self._siam_net = SiamRPNvot()
         self._siam_net.load_state_dict(torch.load(
-            flags.da_siam_rpn_model_path))
+            da_siam_rpn_model_path))
         self._siam_net.eval().cuda()
         self._trackers = []
-        self._min_matching_iou = flags.min_matching_iou
-        self._max_missed_detections = flags.obstacle_track_max_age
+        self._min_matching_iou = min_matching_iou
+        self._max_missed_detections = obstacle_track_max_age
 
     def initialize(self, frame, obstacles):
         """ Initializes a multiple obstacle tracker.
@@ -135,7 +134,7 @@ class MultiObjectDaSiamRPNTracker(MultiObjectTracker):
             if tracker.missed_det_updates <= self._max_missed_detections:
                 updated_trackers.append(tracker)
             else:
-                self._logger.debug("Dropping tracker with id {}".format(
+                print("Dropping tracker with id {}".format(
                     tracker.obstacle.id))
         # Initialize trackers for unmatched obstacles.
         for obstacle in unmatched_obstacles:
