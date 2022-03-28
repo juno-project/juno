@@ -2,62 +2,68 @@
 uuid: 00000000-0000-0000-0000-000000000000
 flow: AutoDrivingPipeline
 operators:
-  ObjectTrackerOperator:
-    id: ObjectTrackerOperator
+  PIDControlOperator:
+    id: PIDControlOperator
     inputs:
-      - port_id: ObjectMsg
+      - port_id: PIDMsg
         port_type: usize
     outputs:
-      - port_id: ObstaclesMsg
+      - port_id: ControlMsg
         port_type: usize
-    uri: "file://./pylot/perception/tracking/object_tracker_operator.py"
+    uri: "file://./pylot/control/pid_control_operator.py"
     configuration:
-      da_siam_rpn_model_path: dependencies/models/tracking/DASiamRPN/SiamRPNVOT.model
-      deep_sort_tracker_weights_path: dependencies/models/tracking/deep-sort-carla/feature_extractor
-      min_matching_iou: "0.5"
-      obstacle_track_max_age: 3
-      tracker_type: sort
+      brake_max: 1
+      execution_mode: real-world
+      min_pid_speed_waypoint_distance: 5
+      min_pid_steer_waypoint_distance: 5
+      pid_d: "0.0"
+      pid_i: "0.05"
+      pid_p: "1.0"
+      simulator_control_frequency: "-1"
+      simulator_fps: 20
+      steer_gain: "0.7"
+      throttle_max: 1
     deadline: ~
     runtime: foo
     ciclo: ~
 sinks:
-  ObjectTrackerSink:
-    id: ObjectTrackerSink
+  PIDControlSink:
+    id: PIDControlSink
     input:
-      port_id: ObstaclesMsg
+      port_id: ControlMsg
       port_type: usize
-    uri: "file://./sinks/object_tracker_sink.py"
+    uri: "file://./sinks/pid_control_sink.py"
     configuration: ~
     runtime: foo
 sources:
-  ObjectTrackerSrc:
-    id: ObjectTrackerSrc
+  PIDControlSrc:
+    id: PIDControlSrc
     output:
-      port_id: ObjectMsg
+      port_id: PIDMsg
       port_type: usize
     period: ~
-    uri: "file://./sources/object_tracker_source.py"
+    uri: "file://./sources/pid_control_source.py"
     configuration:
-      frame_msg: "./test_data/ObstacleTrackerOperator/input/frame_msg-5534.pkl"
-      obstacles_msg: "./test_data/ObstacleTrackerOperator/input/obstacles_msg_out-5534.pkl"
+      vehicle_transform: "./test_data/PIDControlOperator/input/vehicle_transform-5672.pkl"
+      waypoints_msg: "./test_data/PIDControlOperator/input/waypoints_msg-5672.pkl"
     runtime: foo
 connectors: []
 links:
   - from:
-      node: ObjectTrackerSrc
-      output: ObjectMsg
+      node: PIDControlSrc
+      output: PIDMsg
     to:
-      node: ObjectTrackerOperator
-      input: ObjectMsg
+      node: PIDControlOperator
+      input: PIDMsg
     size: ~
     queueing_policy: ~
     priority: ~
   - from:
-      node: ObjectTrackerOperator
-      output: ObstaclesMsg
+      node: PIDControlOperator
+      output: ControlMsg
     to:
-      node: ObjectTrackerSink
-      input: ObstaclesMsg
+      node: PIDControlSink
+      input: ControlMsg
     size: ~
     queueing_policy: ~
     priority: ~
