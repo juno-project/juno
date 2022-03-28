@@ -69,6 +69,27 @@ operators:
       - id: ObstaclesMsg
         type: usize
 
+  - id: PIDControlOperator
+    uri: file://./pylot/control/pid_control_operator.py
+    configuration:
+      execution_mode: real-world
+      simulator_control_frequency: '-1'
+      simulator_fps: 20
+      pid_p: '1.0'
+      pid_d: '0.0'
+      pid_i: '0.05'
+      min_pid_steer_waypoint_distance: 5
+      min_pid_speed_waypoint_distance: 5
+      steer_gain: '0.7'
+      throttle_max: 1
+      brake_max: 1
+    inputs:
+      - id: PIDMsg
+        type: usize
+    outputs:
+      - id: ControlMsg
+        type: usize
+
   - id: LanenetDetectionOperator
     uri: file://./pylot/perception/detection/lanenet_detection_operator.py
     configuration:
@@ -160,6 +181,14 @@ sources:
     output:
       id: ObjectMsg
       type: usize
+  - id: PIDControlSrc
+    uri: file://./sources/pid_control_source.py
+    configuration:
+      vehicle_transform: ./test_data/PIDControlOperator/input/vehicle_transform-5672.pkl
+      waypoints_msg: ./test_data/PIDControlOperator/input/waypoints_msg-5672.pkl
+    output:
+      id: PIDMsg
+      type: usize
 
   - id: LanenetDetectionSrc
     uri: file://./sources/lanenet_detection_source.py
@@ -216,6 +245,11 @@ sinks:
     uri: file://./sinks/object_tracker_sink.py
     input:
         id: ObstaclesMsg
+        type: usize
+  - id : PIDControlSink
+    uri: file://./sinks/pid_control_sink.py
+    input:
+        id: ControlMsg
         type: usize
   - id: LanenetDetectionSink
     uri: file://./sinks/lanenet_detection_sink.py
@@ -354,3 +388,16 @@ links:
   to:
     node : ObjectTrackerSink
     input : ObstaclesMsg
+
+- from:
+    node : PIDControlSrc
+    output : PIDMsg
+  to:
+    node : PIDControlOperator
+    input : PIDMsg
+- from:
+    node : PIDControlOperator
+    output : ControlMsg
+  to:
+    node : PIDControlSink
+    input : ControlMsg
