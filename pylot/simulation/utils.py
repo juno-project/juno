@@ -106,16 +106,16 @@ def set_weather(world, weather: str):
 
 def set_simulation_mode(world, flags):
     # Turn on the synchronous mode so we can control the simulation.
-    if (flags.simulator_mode == 'synchronous'
-            or flags.simulator_mode == 'pseudo-asynchronous'):
-        set_synchronous_mode(world, flags.simulator_fps)
-    elif flags.simulator_mode == 'asynchronous-fixed-time-step':
-        set_asynchronous_fixed_time_step_mode(world, flags.simulator_fps)
-    elif flags.simulator_mode == 'asynchronous':
+    if (flags["simulator_mode"] == 'synchronous'
+            or flags["simulator_mode"] == 'pseudo-asynchronous'):
+        set_synchronous_mode(world, flags["simulator_fps"])
+    elif flags["simulator_mode"] == 'asynchronous-fixed-time-step':
+        set_asynchronous_fixed_time_step_mode(world, flags["simulator_fps"])
+    elif flags["simulator_mode"] == 'asynchronous':
         set_asynchronous_mode(world)
     else:
         raise ValueError('Unexpected simulation mode {}'.format(
-            flags.simulator_mode))
+            flags["simulator_mode"]))
 
 
 def set_synchronous_mode(world, fps):
