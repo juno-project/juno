@@ -24,6 +24,7 @@ class FrameMessage():
         frame (:py:class:`~pylot.perception.camera_frame.CameraFrame`): The
             camera frame.
     """
+
     def __init__(self, timestamp, frame):
         if not isinstance(frame, pylot.perception.camera_frame.CameraFrame):
             raise ValueError(
@@ -39,7 +40,7 @@ class FrameMessage():
             self.timestamp, self.frame)
 
 
-class DepthFrameMessage(erdos.Message):
+class DepthFrameMessage():
     """Message class to be used to send depth camera frames.
 
     Args:
@@ -52,8 +53,9 @@ class DepthFrameMessage(erdos.Message):
         frame (:py:class:`~pylot.perception.depth_frame.DepthFrame`): The
             depth frame.
     """
+
     def __init__(self, timestamp, frame):
-        super(DepthFrameMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         if not isinstance(frame, pylot.perception.depth_frame.DepthFrame):
             raise ValueError(
                 'frame should be of type perception.depth_frame.DepthFrame')
@@ -67,7 +69,7 @@ class DepthFrameMessage(erdos.Message):
             self.timestamp, self.frame)
 
 
-class SegmentedFrameMessage(erdos.Message):
+class SegmentedFrameMessage():
     """This class represents a message to be used to send segmented frames
 
     Args:
@@ -84,6 +86,7 @@ class SegmentedFrameMessage(erdos.Message):
         runtime (:obj:`float`): The runtime of the operator that produced the
             segmented frame (in ms).
     """
+
     def __init__(self, timestamp, frame, runtime=0):
         super(SegmentedFrameMessage, self).__init__(timestamp, None)
         if not isinstance(frame, SegmentedFrame):
@@ -112,6 +115,7 @@ class PointCloudMessage(erdos.Message):
         point_cloud (:py:class:`~pylot.perception.point_cloud.PointCloud`): The
             point cloud.
     """
+
     def __init__(self, timestamp, pc):
         super(PointCloudMessage, self).__init__(timestamp, None)
         if not isinstance(pc, pylot.perception.point_cloud.PointCloud):
@@ -145,6 +149,7 @@ class ObstaclesMessage():
         runtime (:obj:`float`, optional): The runtime of the operator that
             produced the obstacles (in ms).
     """
+
     def __init__(self, timestamp, obstacles, runtime=0):
         self.timestamp = timestamp
         self.obstacles = obstacles
@@ -154,9 +159,9 @@ class ObstaclesMessage():
         return self.__str__()
 
     def __str__(self):
-        return 'ObstaclesMessage(timestamp: {}, runtime: {}, '\
-            'obstacles: {})'.format(
-                self.timestamp, self.runtime, self.obstacles)
+        return 'ObstaclesMessage(timestamp: {}, runtime: {}, ' \
+               'obstacles: {})'.format(
+            self.timestamp, self.runtime, self.obstacles)
 
 
 class ObstaclePositionsSpeedsMessage(erdos.Message):
@@ -170,6 +175,7 @@ class ObstaclePositionsSpeedsMessage(erdos.Message):
     Attributes:
         obstacle_positions_speeds: A list of 2D obstacle positions.
     """
+
     def __init__(self, timestamp, obstacle_positions_speeds):
         super(ObstaclePositionsSpeedsMessage, self).__init__(timestamp, None)
         self.obstacle_positions_speeds = obstacle_positions_speeds
@@ -196,6 +202,7 @@ class ObstacleTrajectoriesMessage():
         obstacle_trajectories (list(:py:class:`~pylot.perception.tracking.obstacle_trajectory.ObstacleTrajectory`)):
             Obstacle trajectories.
     """
+
     def __init__(self, timestamp, obstacle_trajectories):
         self.timestamp = timestamp
         self.obstacle_trajectories = obstacle_trajectories
@@ -265,6 +272,7 @@ class LanesMessage():
     Attributes:
         lanes (list(:py:class:`~.detection.lane.Lane`)): List of lanes.
     """
+
     def __init__(self, timestamp, lanes):
         self.timestamp = timestamp
         self.lanes = lanes
@@ -290,6 +298,7 @@ class TrafficLightsMessage():
         traffic_lights (list(:py:class:`~.detection.traffic_light.TrafficLight`)):
             A list of traffic lights.
     """
+
     def __init__(self, timestamp, traffic_lights):
         self.obstacles = traffic_lights
         self.timestamp = timestamp
@@ -299,11 +308,11 @@ class TrafficLightsMessage():
 
     def __str__(self):
         return 'TrafficLightsMessage(timestamp: {}, ' \
-            'traffic lights: {})'.format(
-                self.timestamp, self.obstacles)
+               'traffic lights: {})'.format(
+            self.timestamp, self.obstacles)
 
 
-class StopSignsMessage(erdos.Message):
+class StopSignsMessage():
     """Message class to be used to send info about stop signs.
 
     Args:
@@ -316,8 +325,9 @@ class StopSignsMessage(erdos.Message):
         stop_signs (list(:py:class:`~.detection.stop_sign.StopSign`)):
             A list of stop signs.
     """
+
     def __init__(self, timestamp, stop_signs):
-        super(StopSignsMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         self.stop_signs = stop_signs
 
     def __repr__(self):
@@ -328,7 +338,7 @@ class StopSignsMessage(erdos.Message):
             self.timestamp, self.stop_signs)
 
 
-class SpeedSignsMessage(erdos.Message):
+class SpeedSignsMessage():
     """Message class to be used to send info about speed limit actors.
 
     Args:
@@ -341,8 +351,9 @@ class SpeedSignsMessage(erdos.Message):
         speed_signs (list(:py:class:`~.detection.speed_limit_sign.SpeedLimitSign`)):
             A list of speed limit signs.
     """
+
     def __init__(self, timestamp, speed_signs):
-        super(SpeedSignsMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         self.speed_signs = speed_signs
 
     def __repr__(self):
@@ -351,3 +362,29 @@ class SpeedSignsMessage(erdos.Message):
     def __str__(self):
         return 'SpeedSignsMessage(timestamp: {}, speed signs: {})'.format(
             self.timestamp, self.speed_signs)
+
+
+class Message():
+    """Message class to be used to send info about speed limit actors.
+
+    Args:
+        timestamp (:py:class:`erdos.timestamp.Timestamp`): The timestamp of the
+            message.
+        speed_signs (list(:py:class:`~.detection.speed_limit_sign.SpeedLimitSign`)):  # noqa: E501
+            A list of speed limit signs.
+
+    Attributes:
+        speed_signs (list(:py:class:`~.detection.speed_limit_sign.SpeedLimitSign`)):
+            A list of speed limit signs.
+    """
+
+    def __init__(self, timestamp, data):
+        self.timestamp = timestamp
+        self.data = data
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return 'Message(timestamp: {}, speed signs: {})'.format(
+            self.timestamp, self.data)

@@ -2,68 +2,58 @@
 uuid: 00000000-0000-0000-0000-000000000000
 flow: AutoDrivingPipeline
 operators:
-  PIDControlOperator:
-    id: PIDControlOperator
+  LocalizationOperator:
+    id: LocalizationOperator
     inputs:
-      - port_id: PIDMsg
+      - port_id: localizationMsg
         port_type: usize
     outputs:
-      - port_id: ControlMsg
+      - port_id: PoseMessage
         port_type: usize
-    uri: "file://./pylot/control/pid_control_operator.py"
-    configuration:
-      brake_max: 1
-      execution_mode: real-world
-      min_pid_speed_waypoint_distance: 5
-      min_pid_steer_waypoint_distance: 5
-      pid_d: "0.0"
-      pid_i: "0.05"
-      pid_p: "1.0"
-      simulator_control_frequency: "-1"
-      simulator_fps: 20
-      steer_gain: "0.7"
-      throttle_max: 1
+    uri: "file://./pylot/localization/localization_operator.py"
+    configuration: ~
     deadline: ~
     runtime: foo
     ciclo: ~
 sinks:
-  PIDControlSink:
-    id: PIDControlSink
+  LocalizationSink:
+    id: LocalizationSink
     input:
-      port_id: ControlMsg
+      port_id: PoseMessage
       port_type: usize
-    uri: "file://./sinks/pid_control_sink.py"
+    uri: "file://./sinks/localization_sink.py"
     configuration: ~
     runtime: foo
 sources:
-  PIDControlSrc:
-    id: PIDControlSrc
+  localizationSrc:
+    id: localizationSrc
     output:
-      port_id: PIDMsg
+      port_id: localizationMsg
       port_type: usize
     period: ~
-    uri: "file://./sources/pid_control_source.py"
+    uri: "file://./sources/localization_source.py"
     configuration:
-      vehicle_transform: "./test_data/PIDControlOperator/input/vehicle_transform-5672.pkl"
-      waypoints_msg: "./test_data/PIDControlOperator/input/waypoints_msg-5672.pkl"
+      gnss_path: "./test_data/LocalizationOperator/input/gnss/gnss-5643.pkl"
+      imu_path: "./test_data/LocalizationOperator/input/imu/imu-5643.pkl"
+      pose_path: "./test_data/LocalizationOperator/input/pose/pose-5643.pkl"
     runtime: foo
 connectors: []
 links:
   - from:
-      node: PIDControlSrc
-      output: PIDMsg
+      node: localizationSrc
+      output: localizationMsg
     to:
-      node: PIDControlOperator
-      input: PIDMsg
+      node: LocalizationOperator
+      input: localizationMsg
     size: ~
     queueing_policy: ~
     priority: ~
   - from:
-      node: PIDControlOperator
-      output: ControlMsg
+      node: LocalizationOperator
+      output: PoseMessage
     to:
-      node: PIDControlSink
-      input: ControlMsg
+      node: LocalizationSink
+      input: PoseMessage
     size: ~
     queueing_policy: ~
     priority: ~
