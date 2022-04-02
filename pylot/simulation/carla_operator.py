@@ -1,21 +1,16 @@
 import enum
 import heapq
-import os
+import logging
 import pickle
-import random
 import sys
 import threading
 import time
-print("carla operator............................")
+# sys.path.remove("/home/erdos/workspace/pylot")
+sys.path.append('/home/erdos/workspace/zenoh-flow-auto-driving')
+# sys.path.append('/home/erdos/workspace/zenoh-flow-auto-driving/pylot')
+# sys.path.append("/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg")
+# sys.path.append("/home/erdos/workspace/pylot/simulation")
 from functools import total_ordering
-sys.path.append("/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg")
-# for root, dirs, files in os.walk("/home/erdos/workspace/zenoh-flow-auto-driving/dependencies"):
-#     sys.path.append(root)
-# for root, dirs, files in os.walk("/home/erdos/workspace/zenoh-flow-auto-driving"):
-#     sys.path.append(root)
-sys.path.remove("/home/erdos/workspace/pylot")
-sys.path.append("/home/erdos/workspace/zenoh-flow-auto-driving")
-
 from carla import Location, VehicleControl, command
 import erdos
 import pylot.simulation.utils
@@ -42,16 +37,8 @@ class CarlaState:
     """
 
     def __init__(self, cfg):
-        # if flags.random_seed:
-        #     random.seed(flags.random_seed)
-        # Register callback on control stream.
-        # control_stream.add_callback(self.on_control_msg)
-        # erdos.add_watermark_callback([release_sensor_stream], [],
-        #                              self.on_sensor_ready)
-        # if flags.simulator_mode == "pseudo-asynchronous":
-        #     erdos.add_watermark_callback([pipeline_finish_notify_stream], [],
-        #                                  self.on_pipeline_finish)
-
+        print("operator init start................")
+        self.cfg = cfg
         self.pose_msg = None
         self.pose_msg_for_control = None
         self.ground_traffic_lights_msg = None
@@ -62,10 +49,18 @@ class CarlaState:
         self.open_drive_msg = None
         self.global_trajectory_msg = None
 
+        # logger
+        logger = logging.getLogger(__name__)
+        logger.setLevel(level=logging.INFO)
+        handler = logging.FileHandler(cfg["log_file_name"])
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
-        self.cfg = cfg
-        self._logger = erdos.utils.setup_logging(cfg["name"],
-                                                 cfg["log_file_name"])
+        # self._logger = erdos.utils.setup_logging(cfg["name"],
+        #                                          cfg["log_file_name"])
+        self._logger = logger
         self._csv_logger = erdos.utils.setup_csv_logging(
             cfg["name"] + '-csv', cfg["csv_log_file_name"])
         # Connect to simulator and retrieve the world running.
@@ -100,12 +95,14 @@ class CarlaState:
 
         pylot.simulation.utils.set_simulation_mode(self._world, self.cfg)
 
-        if cfg["scenario_runner"] or cfg["control"] == "manual":
-            # Wait until the ego vehicle is spawned by the scenario runner.
+        if cfg["scenario_runner"] == "True" or cfg["control"] == "manual":
+            # # Wait until the ego vehicle is spawned by the scenario runner.
             self._logger.info("Waiting for the scenario to be ready ...")
             self._ego_vehicle = pylot.simulation.utils.wait_for_ego_vehicle(
                 self._world)
             self._logger.info("Found ego vehicle")
+            # Spawn ego vehicle, people and vehicles.
+
         else:
             # Spawn ego vehicle, people and vehicles.
             (self._ego_vehicle, self._vehicle_ids,
@@ -119,7 +116,7 @@ class CarlaState:
                 cfg["simulator_num_vehicles"], self._logger)
 
         pylot.simulation.utils.set_vehicle_physics(
-            self._ego_vehicle, cfg["simulator_vehicle_moi"],
+            self._ego_vehicle, cfg["simulator_vehicle_moi"]/10,
             cfg["simulator_vehicle_mass"])
 
         # Lock used to ensure that simulator callbacks are not executed
@@ -136,14 +133,13 @@ class CarlaState:
         self._tick_events = []
         self._control_msgs = {}
 
-
     def on_control_msg(self, msg):
         """ Invoked when a ControlMessage is received.
 
         Args:
             msg: A control.messages.ControlMessage message.
         """
-        print('@{}: received control message'.format(
+        self._logger.debug('@{}: received control message'.format(
             msg.timestamp))
         if self.cfg["simulator_mode"] == 'pseudo-asynchronous':
             heapq.heappush(
@@ -179,17 +175,17 @@ class CarlaState:
 
     def on_pipeline_finish(self, timestamp):
         self._logger.debug("@{}: Received pipeline finish.".format(timestamp))
-        game_time = time.time()
+        game_time = timestamp
         if (self.cfg["simulator_control_frequency"] == -1
                 or self._next_control_sensor_reading is None
                 or game_time == self._next_control_sensor_reading):
             # There was supposed to be a control message for this timestamp
             # too. Send the Pose message and continue after the control message
             # is received.
-            self._update_next_control_pseudo_asynchronous_ticks(game_time)
-            self.__send_hero_vehicle_data(self.pose_msg_for_control,
+            self._update_next_control_pseudo_asynchronous_ticks(timestamp)
+            self._send_hero_vehicle_data(self.pose_msg_for_control,
                                           timestamp)
-            self.__update_spectactor_pose()
+            self._update_spectactor_pose()
         else:
             # No pose message was supposed to be sent for this timestamp, we
             # need to consume the next event to move the dataflow forward.
@@ -215,28 +211,28 @@ class CarlaState:
             self._logger.info(
                 'The world is at the timestamp {}'.format(game_time))
             timestamp = time.time()
-            with erdos.profile(self.cfg["name"] + '.send_actor_data',
-                               self,
-                               event_data={'timestamp': str(timestamp)}):
-                if (self.cfg["simulator_localization_frequency"] == -1
-                        or self._next_localization_sensor_reading is None or
-                        game_time == self._next_localization_sensor_reading):
-                    if self.cfg["simulator_mode"] == 'pseudo-asynchronous':
-                        self._update_next_localization_pseudo_async_ticks(
-                            game_time)
-                    self.__send_hero_vehicle_data(self.pose_msg, timestamp)
-                    self.__send_ground_actors_data(timestamp)
-                    self.__update_spectactor_pose()
-
-                if self.cfg["simulator_mode"] == "pseudo-asynchronous" and (
-                        self.cfg["simulator_control_frequency"] == -1
-                        or self._next_control_sensor_reading is None
-                        or game_time == self._next_control_sensor_reading):
-                    self._update_next_control_pseudo_asynchronous_ticks(
+            # with erdos.profile(self.cfg["name"] + '.send_actor_data',
+            #                    self,
+            #                    event_data={'timestamp': str(timestamp)}):
+            if (self.cfg["simulator_localization_frequency"] == -1
+                    or self._next_localization_sensor_reading is None or
+                    game_time == self._next_localization_sensor_reading):
+                if self.cfg["simulator_mode"] == 'pseudo-asynchronous':
+                    self._update_next_localization_pseudo_async_ticks(
                         game_time)
-                    self.__send_hero_vehicle_data(self.pose_msg_for_control,
-                                                  timestamp)
-                    self.__update_spectactor_pose()
+                self._send_hero_vehicle_data(self.pose_msg, timestamp)
+                self._send_ground_actors_data(timestamp)
+                self._update_spectactor_pose()
+
+            if self.cfg["simulator_mode"] == "pseudo-asynchronous" and (
+                    self.cfg["simulator_control_frequency"] == -1
+                    or self._next_control_sensor_reading is None
+                    or game_time == self._next_control_sensor_reading):
+                self._update_next_control_pseudo_asynchronous_ticks(
+                    game_time)
+                self._send_hero_vehicle_data(self.pose_msg_for_control,
+                                              timestamp)
+                self._update_spectactor_pose()
 
     def _update_next_localization_pseudo_async_ticks(self, game_time: int):
         if self.cfg["simulator_localization_frequency"] > -1:
@@ -313,7 +309,7 @@ class CarlaState:
         self._client.apply_batch_sync(
             [command.ApplyVehicleControl(self._ego_vehicle.id, vec_control)])
 
-    def __send_hero_vehicle_data(self, msg, timestamp):
+    def _send_hero_vehicle_data(self, msg, timestamp):
         vec_transform = pylot.utils.Transform.from_simulator_transform(
             self._ego_vehicle.get_transform())
         velocity_vector = pylot.utils.Vector3D.from_simulator_vector(
@@ -325,7 +321,7 @@ class CarlaState:
         # stream.send(erdos.Message(timestamp, pose))
         # stream.send(erdos.WatermarkMessage(timestamp))
 
-    def __send_ground_actors_data(self, timestamp):
+    def _send_ground_actors_data(self, timestamp):
         # Get all the actors in the simulation.
         actor_list = self._world.get_actors()
 
@@ -386,7 +382,7 @@ class CarlaState:
         # self.open_drive_stream.send(top_watermark)
         # self.global_trajectory_stream.send(top_watermark)
 
-    def __update_spectactor_pose(self):
+    def _update_spectactor_pose(self):
         # Set the world simulation view with respect to the vehicle.
         v_pose = self._ego_vehicle.get_transform()
         v_pose.location -= 10 * Location(v_pose.get_forward_vector())
@@ -406,10 +402,6 @@ class CarlaOperator():
         #
         control_msg = carlaMsg['control']
         timestamp = carlaMsg['timestamp']
-        #
-        # state.buffer_msg(pose_msg, msg_type="pose", queue=state._ground_pose_updates)
-        # state.buffer_msg(gnss_msg, msg_type="GNSS", queue=state._gnss_updates)
-        # state.buffer_msg(imu_msg, msg_type="IMU", queue=state._imu_updates)
 
         state.on_control_msg(control_msg)
         state.on_sensor_ready(timestamp)
@@ -418,7 +410,6 @@ class CarlaOperator():
 
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
-
         return outputs
 
 
@@ -462,8 +453,7 @@ class CarlaOperator():
                   "open_drive_msg": _state.open_drive_msg,
                   "global_trajectory_msg": _state.global_trajectory_msg
                   }
-        print(_state.ground_traffic_lights_msg)
-        return {'carlaMessage': pickle.dumps(result)}
+        return {'carlaOperatorMsg': pickle.dumps(result)}
 
 
 @total_ordering
@@ -476,6 +466,8 @@ class TickEvent(enum.Enum):
             return self.value < other.value
         return NotImplemented
 
+def register():
+    return CarlaOperator
 
 if __name__=='__main__':
     # project_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + os.path.sep + "..")

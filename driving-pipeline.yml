@@ -140,6 +140,7 @@ operators:
        simulator_host: 'localhost'
        simulator_port: 2000
        simulator_timeout: 10
+       #boolean  会识别成字符串False
        scenario_runner: False
        control: 'simulator_auto_pilot'
        carla_traffic_manager_port: 8000
@@ -152,7 +153,7 @@ operators:
        simulator_spawn_point_index: -1
        simulator_num_people: 250
        simulator_num_vehicles: 20
-       simulator_vehicle_moi: 0.1
+       simulator_vehicle_moi: 1
        simulator_vehicle_mass: 100
     inputs:
      - id: carlaMsg
@@ -247,7 +248,7 @@ sources:
 #      type: usize
 #
   - id: carlaSrc
-    uri: file://./sources//carla_source.py
+    uri: file://./sources/carla_source.py
 #    uri: file:///home/erdos/workspace/zenoh-flow-auto-driving/sources/carla_source.py
     configuration:
        control_path: /home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaOperator/input/ControlMessage.pkl
