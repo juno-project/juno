@@ -12,7 +12,7 @@ class MySink(Sink):
 
     def run(self, _ctx, _state, input):
         data = pickle.loads(input.data)
-        print("sink input_data : {}".format(data.waypoints.waypoints))
+        print("sink vehicle_id_msg : {}".format(data["vehicle_id_msg"]))
 def register():
     return MySink
 

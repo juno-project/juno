@@ -1,9 +1,19 @@
 import os
 import sys
-# sys.path.append('/home/erdos/zenoh-flow-auto-driving/')
-# sys.path.append('/usr/lib/python3.8')
-# sys.path.append('/home/test2/.local/lib/python3.8/site-packages')
+# sys.path.append("/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg")
+# for root, dirs, files in os.walk("/home/erdos/workspace/zenoh-flow-auto-driving/dependencies"):
+#     sys.path.append(root)
+# for root, dirs, files in os.walk("/home/erdos/workspace/zenoh-flow-auto-driving"):
+#     sys.path.append(root)
+
+# /home/erdos/.local/lib/python3.8/site-packages
+# /home/erdos/workspace/pylot/venv/lib/python3.8/site-packages
 sys.path.remove("/home/erdos/workspace/pylot")
+sys.path.append('/home/erdos/workspace/zenoh-flow-auto-driving')
+sys.path.append('/usr/lib/python3.8')
+sys.path.append('/home/erdos/.local/lib/python3.8/site-packages')
+
+
 from zenoh_flow import Source
 import time
 import pickle
@@ -30,7 +40,8 @@ class MySrc(Source):
         control = pickle.load(open(state.control_path, "rb"))
         state.timestamp += 1
         time.sleep(1)
-        return pickle.dumps(control)
+        result = {"control": control, "timestamp": state.timestamp}
+        return pickle.dumps(result)
 
 def register():
     return MySrc
