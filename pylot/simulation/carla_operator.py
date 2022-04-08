@@ -40,7 +40,7 @@ class CarlaState:
         self.pose_msg_for_control = None
         self.ground_traffic_lights_msg = None
         self.ground_obstacles_msg = None
-        self.ground_speed_limit_signs_msg= None
+        self.ground_speed_limit_signs_msg = None
         self.ground_stop_signs_msg= None
         self.vehicle_id_msg = None
         self.open_drive_msg = None
@@ -207,7 +207,8 @@ class CarlaState:
             game_time = int(msg.elapsed_seconds * 1000)
             self._logger.info(
                 'The world is at the timestamp {}'.format(game_time))
-            timestamp = time.time()
+            self.msg_timestamp = game_time
+            timestamp = game_time
             # with erdos.profile(self.cfg["name"] + '.send_actor_data',
             #                    self,
             #                    event_data={'timestamp': str(timestamp)}):
@@ -364,7 +365,7 @@ class CarlaState:
         #                   self._ego_vehicle.id))
         # self.vehicle_id_stream.send(
         #     erdos.WatermarkMessage(erdos.Timestamp(is_top=True)))
-        timestamp = time.time()
+        timestamp = 0
         self.vehicle_id_msg = Message(timestamp, self._ego_vehicle.id)
 
 
@@ -394,7 +395,6 @@ class CarlaOperator():
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        print("rule..............")
         token = tokens.get('carlaMsg').get_data()
         carlaMsg = pickle.loads(bytes(token))
         #
@@ -431,16 +431,7 @@ class CarlaOperator():
         # sensors.
         _state._world.on_tick(_state.send_actor_data)
         _state._tick_simulator()
-        #
-        # self.pose_msg = None
-        # self.pose_msg_for_control = None
-        # self.ground_traffic_lights_msg = None
-        # self.ground_obstacles_msg = None
-        # self.ground_speed_limit_signs_msg = None
-        # self.ground_stop_signs_msg = None
-        # self.vehicle_id_msg = None
-        # self.open_drive_msg = None
-        # self.global_trajectory_msg = None
+
         result = {"pose_msg": _state.pose_msg,
                   "pose_msg_for_control": _state.pose_msg_for_control,
                   "ground_traffic_lights_msg": _state.ground_traffic_lights_msg,
@@ -450,7 +441,7 @@ class CarlaOperator():
                   "vehicle_id_msg": _state.vehicle_id_msg,
                   "open_drive_msg": _state.open_drive_msg,
                   "global_trajectory_msg": _state.global_trajectory_msg,
-                  "timestamp": time.time()
+                  "timestamp": _state.msg_timestamp
                   }
         return {'carlaOperatorMsg': pickle.dumps(result)}
 
