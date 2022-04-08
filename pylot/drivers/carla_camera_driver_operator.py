@@ -99,7 +99,7 @@ class CarlaCameraDriverState:
         game_time = int(simulator_image.timestamp * 1000)
         # timestamp = erdos.Timestamp(coordinates=[game_time])
         # watermark_msg = erdos.WatermarkMessage(timestamp)
-        timestamp = time.time()
+        timestamp = game_time
         watermark_msg = timestamp
         # with erdos.profile(self.config.name + '.process_images',
         #                    self,
