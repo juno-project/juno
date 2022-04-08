@@ -8,6 +8,7 @@ operators:
 #       path_coco_labels: ./dependencies/models/pylot.names
 #       obstacle_detection_min_score_threshold: 3
 #       log_detector_output: true
+#       log_detector_output: true
 #       out_path: ./out_data/
 #     inputs:
 #       - id: FrameMsg
@@ -161,6 +162,31 @@ operators:
     outputs:
      - id: carlaOperatorMsg
        type: usize
+
+  - id: carlaCameraDriverOperator
+    uri: file://./pylot/drivers/carla_camera_driver_operator.py
+    configuration:
+      log_file_name: 'pylot.log'
+      camera_name: 'center_camera_operator'
+      camera_image_width: 1920
+      camera_image_height: 1080
+      camera_fov: 90.0
+      visualize_depth_camera: False
+      name: "center_camera_operator"
+      simulator_host: 'localhost'
+      simulator_port: 2000
+      simulator_timeout: 10
+      simulator_camera_frequency: -1
+      simulator_mode: 'synchronous'
+      simulator_fps: 2
+    inputs:
+     - id: carlaOperatorMsg
+       type: usize
+    outputs:
+     - id: carlaCameraDriverMsg
+       type: usize
+
+
 sources:
 #   - id : DetectionSrc
 #     uri: file://./sources/detection_source.py
@@ -249,12 +275,18 @@ sources:
 #
   - id: carlaSrc
     uri: file://./sources/carla_source.py
-#    uri: file:///home/erdos/workspace/zenoh-flow-auto-driving/sources/carla_source.py
     configuration:
        control_path: /home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaOperator/input/ControlMessage.pkl
     output:
        id: carlaMsg
        type: usize
+#  - id: carlaCameraSrc
+#    uri: file://./sources/carla_camera_driver_source.py
+#    configuration:
+#       vehicle_id_msg_path: /home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaCameraDriverOperator/input/vehicle_id_msg.pkl
+#    output:
+#       id: carlaCameraMsg
+#       type: usize
 
 sinks:
 #   - id : DetectionSink
@@ -309,11 +341,15 @@ sinks:
 #       id: linearPredictorMsg
 #       type: usize
 
-  - id: carlaSink
-    uri: file://./sinks/carla_sink.py
-#    uri: file:///home/erdos/workspace/zenoh-flow-auto-driving/sinks/carla_sink.py
+#  - id: carlaSink
+#    uri: file://./sinks/carla_sink.py
+#    input:
+#      id: carlaOperatorMsg
+#      type: usize
+  - id: carlaCameraSink
+    uri: file://./sinks/carla_camera_driver_sink.py
     input:
-      id: carlaOperatorMsg
+      id: carlaCameraDriverMsg
       type: usize
 links:
 
@@ -451,6 +487,35 @@ links:
 #    input : ControlMsg
 
 
+#- from:
+#    node : carlaSrc
+#    output : carlaMsg
+#  to:
+#    node : carlaOperator
+#    input : carlaMsg
+#- from:
+#    node : carlaOperator
+#    output : carlaOperatorMsg
+#  to:
+#    node : carlaSink
+#    input : carlaOperatorMsg
+
+
+#- from:
+#    node : carlaCameraSrc
+#    output : carlaCameraMsg
+#  to:
+#    node :  carlaCameraDriverOperator
+#    input : carlaCameraMsg
+#- from:
+#    node : carlaCameraDriverOperator
+#    output : carlaCameraDriverMsg
+#  to:
+#    node : carlaCameraSink
+#    input : carlaCameraDriverMsg
+
+
+
 - from:
     node : carlaSrc
     output : carlaMsg
@@ -461,5 +526,16 @@ links:
     node : carlaOperator
     output : carlaOperatorMsg
   to:
-    node : carlaSink
+    node : carlaCameraDriverOperator
     input : carlaOperatorMsg
+- from:
+    node : carlaCameraDriverOperator
+    output : carlaCameraDriverMsg
+  to:
+    node : carlaCameraSink
+    input : carlaCameraDriverMsg
+
+
+
+
+

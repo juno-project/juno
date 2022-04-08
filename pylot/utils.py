@@ -1,3 +1,4 @@
+import logging
 import math
 import time
 from enum import Enum
@@ -23,6 +24,7 @@ class Rotation(object):
         yaw:   Rotation about Z-axis.
         roll:  Rotation about X-axis.
     """
+
     def __init__(self, pitch: float = 0, yaw: float = 0, roll: float = 0):
         self.pitch = pitch
         self.yaw = yaw
@@ -82,6 +84,7 @@ class Quaternion(object):
         matrix: A 3x3 numpy array that can be used to rotate 3D vectors from
             body frame to world frame.
     """
+
     def __init__(self, w: float, x: float, y: float, z: float):
         norm = np.linalg.norm([w, x, y, z])
         if norm < 1e-50:
@@ -186,7 +189,7 @@ class Quaternion(object):
 
         singularity_test = self.z * self.x - self.w * self.y
         yaw_y = 2.0 * (self.w * self.z + self.x * self.y)
-        yaw_x = (1.0 - 2.0 * (self.y**2 + self.z**2))
+        yaw_x = (1.0 - 2.0 * (self.y ** 2 + self.z ** 2))
 
         pitch, yaw, roll = None, None, None
         if singularity_test < -SINGULARITY_THRESHOLD:
@@ -202,7 +205,7 @@ class Quaternion(object):
             yaw = np.arctan2(yaw_y, yaw_x) * RAD_TO_DEG
             roll = np.arctan2(-2.0 * (self.w * self.x + self.y * self.z),
                               (1.0 - 2.0 *
-                               (self.x**2 + self.y**2))) * RAD_TO_DEG
+                               (self.x ** 2 + self.y ** 2))) * RAD_TO_DEG
         return Rotation(pitch, yaw, roll)
 
     def __mul__(self, other):
@@ -243,6 +246,7 @@ class Vector3D(object):
         y: The value of the second axis.
         z: The value of the third axis.
     """
+
     def __init__(self, x: float = 0, y: float = 0, z: float = 0):
         self.x, self.y, self.z = float(x), float(y), float(z)
 
@@ -372,6 +376,7 @@ class Vector3D(object):
 
 class Vector2D(object):
     """Represents a 2D vector and provides helper functions."""
+
     def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
@@ -565,6 +570,7 @@ class Transform(object):
             coordinate space with respect to the location and rotation of the
             given object.
     """
+
     def __init__(self,
                  location: Location = None,
                  rotation: Rotation = None,
@@ -844,6 +850,7 @@ class Pose(object):
         velocity_vector (:py:class:`~pylot.utils.Vector3D`): Velocity vector
             in world frame
     """
+
     def __init__(self,
                  transform: Transform,
                  forward_speed: float,
@@ -865,7 +872,7 @@ class Pose(object):
         return self.__str__()
 
     def __str__(self):
-        return "Pose(transform: {}, forward speed: {}, velocity vector: {})"\
+        return "Pose(transform: {}, forward speed: {}, velocity vector: {})" \
             .format(self.transform, self.forward_speed, self.velocity_vector)
 
 
@@ -977,6 +984,7 @@ class LaneMarking(object):
         lane_change (:py:class:`.LaneChange`): The type that defines the
             permission to either turn left, right, both or none.
     """
+
     def __init__(self, marking_color, marking_type, lane_change):
         self.marking_color = LaneMarkingColor(marking_color)
         self.marking_type = LaneMarkingType(marking_type)
@@ -1078,4 +1086,15 @@ def run_visualizer_control_loop(control_display_stream):
 
 def verify_keys_in_dict(required_keys, arg_dict):
     assert set(required_keys).issubset(set(arg_dict.keys())), \
-            "one or more of {} not found in {}".format(required_keys, arg_dict)
+        "one or more of {} not found in {}".format(required_keys, arg_dict)
+
+
+def get_logger(log_file_name):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level=logging.INFO)
+    handler = logging.FileHandler(log_file_name)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger

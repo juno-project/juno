@@ -6,10 +6,8 @@ import sys
 import threading
 import time
 # sys.path.remove("/home/erdos/workspace/pylot")
-sys.path.append('/home/erdos/workspace/zenoh-flow-auto-driving')
-# sys.path.append('/home/erdos/workspace/zenoh-flow-auto-driving/pylot')
+# sys.path.append('/home/erdos/workspace/zenoh-flow-auto-driving')
 # sys.path.append("/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg")
-# sys.path.append("/home/erdos/workspace/pylot/simulation")
 from functools import total_ordering
 from carla import Location, VehicleControl, command
 import erdos
@@ -37,7 +35,6 @@ class CarlaState:
     """
 
     def __init__(self, cfg):
-        print("operator init start................")
         self.cfg = cfg
         self.pose_msg = None
         self.pose_msg_for_control = None
@@ -397,6 +394,7 @@ class CarlaOperator():
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
+        print("rule..............")
         token = tokens.get('carlaMsg').get_data()
         carlaMsg = pickle.loads(bytes(token))
         #
@@ -451,7 +449,8 @@ class CarlaOperator():
                   "ground_stop_signs_msg": _state.ground_stop_signs_msg,
                   "vehicle_id_msg": _state.vehicle_id_msg,
                   "open_drive_msg": _state.open_drive_msg,
-                  "global_trajectory_msg": _state.global_trajectory_msg
+                  "global_trajectory_msg": _state.global_trajectory_msg,
+                  "timestamp": time.time()
                   }
         return {'carlaOperatorMsg': pickle.dumps(result)}
 
@@ -480,7 +479,7 @@ if __name__=='__main__':
         'simulator_host': 'localhost',
         'simulator_port': 2000,
         'simulator_timeout': 10,
-        'scenario_runner': False,
+        'scenario_runner': 'False',
         'control': 'simulator_auto_pilot',
         'carla_traffic_manager_port': 8000,
         'simulator_mode': 'synchronous',

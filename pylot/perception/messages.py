@@ -108,7 +108,7 @@ class PointCloudMessage(erdos.Message):
     Args:
         timestamp (:py:class:`erdos.timestamp.Timestamp`): The timestamp of the
             message.
-        pc (:py:class:`~pylot.perception.point_cloud.PointCloud`): The point
+        pc (:py:class:`~pylot1.perception.point_cloud.PointCloud`): The point
             cloud to send.
 
     Attributes:
