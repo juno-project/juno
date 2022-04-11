@@ -163,28 +163,28 @@ operators:
      - id: carlaOperatorMsg
        type: usize
 
-  - id: carlaCameraDriverOperator
-    uri: file://./pylot/drivers/carla_camera_driver_operator.py
-    configuration:
-      log_file_name: 'pylot.log'
-      camera_name: 'center_camera_operator'
-      camera_image_width: 1920
-      camera_image_height: 1080
-      camera_fov: 90.0
-      visualize_depth_camera: False
-      name: "center_camera_operator"
-      simulator_host: 'localhost'
-      simulator_port: 2000
-      simulator_timeout: 10
-      simulator_camera_frequency: -1
-      simulator_mode: 'synchronous'
-      simulator_fps: 2
-    inputs:
-     - id: carlaOperatorMsg
-       type: usize
-    outputs:
-     - id: carlaCameraDriverMsg
-       type: usize
+#  - id: carlaCameraDriverOperator
+#    uri: file://./pylot/drivers/carla_camera_driver_operator.py
+#    configuration:
+#      log_file_name: 'pylot.log'
+#      camera_name: 'center_camera_operator'
+#      camera_image_width: 1920
+#      camera_image_height: 1080
+#      camera_fov: 90.0
+#      visualize_depth_camera: False
+#      name: "center_camera_operator"
+#      simulator_host: 'localhost'
+#      simulator_port: 2000
+#      simulator_timeout: 10
+#      simulator_camera_frequency: -1
+#      simulator_mode: 'synchronous'
+#      simulator_fps: 2
+#    inputs:
+#     - id: carlaOperatorMsg
+#       type: usize
+#    outputs:
+#     - id: carlaCameraDriverMsg
+#       type: usize
 
 #  - id: carlaLidarDriverOperator
 #    uri: file://./pylot/drivers/carla_lidar_driver_operator.py
@@ -209,6 +209,30 @@ operators:
 #    outputs:
 #     - id: carlaLidarDriverMsg
 #       type: usize
+
+  - id: carlaImuDriverOperator
+    uri: file://./pylot/drivers/carla_imu_driver_operator.py
+    configuration:
+      log_file_name: 'pylot.log'
+      name: "center_camera_operator"
+      simulator_host: 'localhost'
+      simulator_port: 2000
+      simulator_timeout: 10
+      simulator_mode: 'synchronous'
+      simulator_fps: 20
+      accel_noise_stddev_x: 0.0
+      accel_noise_stddev_y: 0.0
+      accel_noise_stddev_z: 0.0
+      gyro_noise_stddev_x: 0.0
+      gyro_noise_stddev_y: 0.0
+      gyro_noise_stddev_z: 0.0
+      simulator_imu_frequency: 1
+    inputs:
+     - id: carlaOperatorMsg
+       type: usize
+    outputs:
+     - id: carlaImuDriverMsg
+       type: usize
 
 sources:
 #   - id : DetectionSrc
@@ -369,17 +393,23 @@ sinks:
 #    input:
 #      id: carlaOperatorMsg
 #      type: usize
-  - id: carlaCameraSink
-    uri: file://./sinks/carla_camera_driver_sink.py
-    input:
-      id: carlaCameraDriverMsg
-      type: usize
+#  - id: carlaCameraSink
+#    uri: file://./sinks/carla_camera_driver_sink.py
+#    input:
+#      id: carlaCameraDriverMsg
+#      type: usize
 
 #  - id: carlaLidarSink
 #    uri: file://./sinks/carla_lidar_driver_sink.py
 #    input:
 #      id: carlaLidarDriverMsg
 #      type: usize
+
+  - id: carlaImuSink
+    uri: file://./sinks/carla_imu_driver_sink.py
+    input:
+      id: carlaImuDriverMsg
+      type: usize
 links:
 
 #- from:
@@ -545,24 +575,24 @@ links:
 
 
 
-- from:
-    node : carlaSrc
-    output : carlaMsg
-  to:
-    node : carlaOperator
-    input : carlaMsg
-- from:
-    node : carlaOperator
-    output : carlaOperatorMsg
-  to:
-    node : carlaCameraDriverOperator
-    input : carlaOperatorMsg
-- from:
-    node : carlaCameraDriverOperator
-    output : carlaCameraDriverMsg
-  to:
-    node : carlaCameraSink
-    input : carlaCameraDriverMsg
+#- from:
+#    node : carlaSrc
+#    output : carlaMsg
+#  to:
+#    node : carlaOperator
+#    input : carlaMsg
+#- from:
+#    node : carlaOperator
+#    output : carlaOperatorMsg
+#  to:
+#    node : carlaCameraDriverOperator
+#    input : carlaOperatorMsg
+#- from:
+#    node : carlaCameraDriverOperator
+#    output : carlaCameraDriverMsg
+#  to:
+#    node : carlaCameraSink
+#    input : carlaCameraDriverMsg
 
 #- from:
 #    node : carlaSrc
@@ -582,6 +612,26 @@ links:
 #  to:
 #    node : carlaLidarSink
 #    input : carlaLidarDriverMsg
+
+
+- from:
+    node : carlaSrc
+    output : carlaMsg
+  to:
+    node : carlaOperator
+    input : carlaMsg
+- from:
+    node : carlaOperator
+    output : carlaOperatorMsg
+  to:
+    node : carlaImuDriverOperator
+    input : carlaOperatorMsg
+- from:
+    node : carlaImuDriverOperator
+    output : carlaImuDriverMsg
+  to:
+    node : carlaImuSink
+    input : carlaImuDriverMsg
 
 
 
