@@ -181,7 +181,7 @@ class CarlaCameraDriverOperator():
     def run(self, _ctx, _state, inputs):
         # Read the vehicle id from the vehicle id stream
         vehicle_id = _state.vehicle_id_msg.data
-        print(
+        _state._logger.debug(
             "The CameraDriverOperator received the vehicle id: {}".format(
                 vehicle_id))
 

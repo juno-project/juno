@@ -210,8 +210,32 @@ operators:
 #     - id: carlaLidarDriverMsg
 #       type: usize
 
-  - id: carlaImuDriverOperator
-    uri: file://./pylot/drivers/carla_imu_driver_operator.py
+#  - id: carlaImuDriverOperator
+#    uri: file://./pylot/drivers/carla_imu_driver_operator.py
+#    configuration:
+#      log_file_name: 'pylot.log'
+#      name: "center_camera_operator"
+#      simulator_host: 'localhost'
+#      simulator_port: 2000
+#      simulator_timeout: 10
+#      simulator_mode: 'synchronous'
+#      simulator_fps: 20
+#      accel_noise_stddev_x: 0.0
+#      accel_noise_stddev_y: 0.0
+#      accel_noise_stddev_z: 0.0
+#      gyro_noise_stddev_x: 0.0
+#      gyro_noise_stddev_y: 0.0
+#      gyro_noise_stddev_z: 0.0
+#      simulator_imu_frequency: 1
+#    inputs:
+#     - id: carlaOperatorMsg
+#       type: usize
+#    outputs:
+#     - id: carlaImuDriverMsg
+#       type: usize
+
+  - id: carlaGnssDriverOperator
+    uri: file://./pylot/drivers/carla_gnss_driver_operator.py
     configuration:
       log_file_name: 'pylot.log'
       name: "center_camera_operator"
@@ -220,18 +244,18 @@ operators:
       simulator_timeout: 10
       simulator_mode: 'synchronous'
       simulator_fps: 20
-      accel_noise_stddev_x: 0.0
-      accel_noise_stddev_y: 0.0
-      accel_noise_stddev_z: 0.0
-      gyro_noise_stddev_x: 0.0
-      gyro_noise_stddev_y: 0.0
-      gyro_noise_stddev_z: 0.0
-      simulator_imu_frequency: 1
+      gnss_noise_stddev_alt: 0.0
+      gnss_noise_stddev_lat: 0.0
+      gnss_noise_stddev_lon: 0.0
+      gnss_bias_alt: 0.0
+      gnss_bias_lat: 0.0
+      gnss_bias_lon: 0.0
+      simulator_gnss_frequency: 10
     inputs:
      - id: carlaOperatorMsg
        type: usize
     outputs:
-     - id: carlaImuDriverMsg
+     - id: carlaGnssDriverMsg
        type: usize
 
 sources:
@@ -405,10 +429,16 @@ sinks:
 #      id: carlaLidarDriverMsg
 #      type: usize
 
-  - id: carlaImuSink
-    uri: file://./sinks/carla_imu_driver_sink.py
+#  - id: carlaImuSink
+#    uri: file://./sinks/carla_imu_driver_sink.py
+#    input:
+#      id: carlaImuDriverMsg
+#      type: usize
+
+  - id: carlaGnssSink
+    uri: file://./sinks/carla_gnss_driver_sink.py
     input:
-      id: carlaImuDriverMsg
+      id: carlaGnssDriverMsg
       type: usize
 links:
 
@@ -614,6 +644,25 @@ links:
 #    input : carlaLidarDriverMsg
 
 
+#- from:
+#    node : carlaSrc
+#    output : carlaMsg
+#  to:
+#    node : carlaOperator
+#    input : carlaMsg
+#- from:
+#    node : carlaOperator
+#    output : carlaOperatorMsg
+#  to:
+#    node : carlaImuDriverOperator
+#    input : carlaOperatorMsg
+#- from:
+#    node : carlaImuDriverOperator
+#    output : carlaImuDriverMsg
+#  to:
+#    node : carlaImuSink
+#    input : carlaImuDriverMsg
+
 - from:
     node : carlaSrc
     output : carlaMsg
@@ -624,14 +673,12 @@ links:
     node : carlaOperator
     output : carlaOperatorMsg
   to:
-    node : carlaImuDriverOperator
+    node : carlaGnssDriverOperator
     input : carlaOperatorMsg
 - from:
-    node : carlaImuDriverOperator
-    output : carlaImuDriverMsg
+    node : carlaGnssDriverOperator
+    output : carlaGnssDriverMsg
   to:
-    node : carlaImuSink
-    input : carlaImuDriverMsg
-
-
+    node : carlaGnssSink
+    input : carlaGnssDriverMsg
 
