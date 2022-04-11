@@ -186,6 +186,29 @@ operators:
      - id: carlaCameraDriverMsg
        type: usize
 
+#  - id: carlaLidarDriverOperator
+#    uri: file://./pylot/drivers/carla_lidar_driver_operator.py
+#    configuration:
+#      log_file_name: 'pylot.log'
+#      camera_name: 'center_camera_operator'
+#      camera_image_width: 1920
+#      camera_image_height: 1080
+#      camera_fov: 90.0
+#      visualize_depth_camera: False
+#      name: "center_camera_operator"
+#      simulator_host: 'localhost'
+#      simulator_port: 2000
+#      simulator_timeout: 10
+#      simulator_camera_frequency: -1
+#      simulator_mode: 'synchronous'
+#      simulator_fps: 20
+#      simulator_lidar_frequency: 1
+#    inputs:
+#     - id: carlaOperatorMsg
+#       type: usize
+#    outputs:
+#     - id: carlaLidarDriverMsg
+#       type: usize
 
 sources:
 #   - id : DetectionSrc
@@ -351,6 +374,12 @@ sinks:
     input:
       id: carlaCameraDriverMsg
       type: usize
+
+#  - id: carlaLidarSink
+#    uri: file://./sinks/carla_lidar_driver_sink.py
+#    input:
+#      id: carlaLidarDriverMsg
+#      type: usize
 links:
 
 #- from:
@@ -535,7 +564,24 @@ links:
     node : carlaCameraSink
     input : carlaCameraDriverMsg
 
-
+#- from:
+#    node : carlaSrc
+#    output : carlaMsg
+#  to:
+#    node : carlaOperator
+#    input : carlaMsg
+#- from:
+#    node : carlaOperator
+#    output : carlaOperatorMsg
+#  to:
+#    node : carlaLidarDriverOperator
+#    input : carlaOperatorMsg
+#- from:
+#    node : carlaLidarDriverOperator
+#    output : carlaLidarDriverMsg
+#  to:
+#    node : carlaLidarSink
+#    input : carlaLidarDriverMsg
 
 
 

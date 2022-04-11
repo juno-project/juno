@@ -102,7 +102,7 @@ class SegmentedFrameMessage():
             self.timestamp, self.frame)
 
 
-class PointCloudMessage(erdos.Message):
+class PointCloudMessage():
     """Message class to be used to send point clouds.
 
     Args:
@@ -117,7 +117,7 @@ class PointCloudMessage(erdos.Message):
     """
 
     def __init__(self, timestamp, pc):
-        super(PointCloudMessage, self).__init__(timestamp, None)
+        self.timestamp = timestamp
         if not isinstance(pc, pylot.perception.point_cloud.PointCloud):
             raise ValueError(
                 'pc should be of type perception.point_cloud.PointCloud')

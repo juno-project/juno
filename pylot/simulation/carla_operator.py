@@ -36,15 +36,17 @@ class CarlaState:
 
     def __init__(self, cfg):
         self.cfg = cfg
-        self.pose_msg = None
-        self.pose_msg_for_control = None
-        self.ground_traffic_lights_msg = None
-        self.ground_obstacles_msg = None
-        self.ground_speed_limit_signs_msg = None
-        self.ground_stop_signs_msg= None
-        self.vehicle_id_msg = None
-        self.open_drive_msg = None
-        self.global_trajectory_msg = None
+
+        self.pose_stream = None
+        self.pose_stream_for_control = None
+        self.ground_traffic_lights_stream = None
+        self.ground_obstacles_stream = None
+        self.ground_speed_limit_signs_stream = None
+        self.ground_stop_signs_stream = None
+        self.vehicle_id_stream = None
+        self.open_drive_stream = None
+        self.global_trajectory_stream = None
+
 
         # logger
         logger = logging.getLogger(__name__)
@@ -180,7 +182,7 @@ class CarlaState:
             # too. Send the Pose message and continue after the control message
             # is received.
             self._update_next_control_pseudo_asynchronous_ticks(timestamp)
-            self._send_hero_vehicle_data(self.pose_msg_for_control,
+            self._send_hero_vehicle_data(self.pose_stream_for_control,
                                           timestamp)
             self._update_spectactor_pose()
         else:
@@ -218,7 +220,7 @@ class CarlaState:
                 if self.cfg["simulator_mode"] == 'pseudo-asynchronous':
                     self._update_next_localization_pseudo_async_ticks(
                         game_time)
-                self._send_hero_vehicle_data(self.pose_msg, timestamp)
+                self._send_hero_vehicle_data(self.pose_stream, timestamp)
                 self._send_ground_actors_data(timestamp)
                 self._update_spectactor_pose()
 
@@ -228,7 +230,7 @@ class CarlaState:
                     or game_time == self._next_control_sensor_reading):
                 self._update_next_control_pseudo_asynchronous_ticks(
                     game_time)
-                self._send_hero_vehicle_data(self.pose_msg_for_control,
+                self._send_hero_vehicle_data(self.pose_stream_for_control,
                                               timestamp)
                 self._update_spectactor_pose()
 
@@ -329,7 +331,7 @@ class CarlaState:
         # Send ground people and vehicles.
         # self.ground_obstacles_stream.send(
         #     ObstaclesMessage(timestamp, vehicles + people))
-        self.ground_obstacles_msg = ObstaclesMessage(timestamp, vehicles + people)
+        self.ground_obstacles_stream = ObstaclesMessage(timestamp, vehicles + people)
         # print(ObstaclesMessage(timestamp, vehicles + people))
         # self.ground_obstacles_stream.send(erdos.WatermarkMessage(timestamp))
 
@@ -339,21 +341,21 @@ class CarlaState:
         # self.ground_traffic_lights_stream.send(
         #     erdos.WatermarkMessage(timestamp))
 
-        self.ground_traffic_lights_msg = TrafficLightsMessage(timestamp, traffic_lights)
+        self.ground_traffic_lights_stream = TrafficLightsMessage(timestamp, traffic_lights)
         # Send ground speed signs.
         # self.ground_speed_limit_signs_stream.send(
         #     SpeedSignsMessage(timestamp, speed_limits))
         # self.ground_speed_limit_signs_stream.send(
         #     erdos.WatermarkMessage(timestamp))
         #
-        self.ground_speed_limit_signs_msg = SpeedSignsMessage(timestamp, speed_limits)
+        self.ground_speed_limit_signs_stream = SpeedSignsMessage(timestamp, speed_limits)
 
         # Send stop signs.
         # self.ground_stop_signs_stream.send(
         #     StopSignsMessage(timestamp, traffic_stops))
         # self.ground_stop_signs_stream.send(erdos.WatermarkMessage(timestamp))
 
-        self.ground_stop_signs_msg = StopSignsMessage(timestamp, traffic_stops)
+        self.ground_stop_signs_stream = StopSignsMessage(timestamp, traffic_stops)
 
     def _send_world_data(self):
         """ Sends ego vehicle id, open drive and trajectory messages."""
@@ -366,8 +368,7 @@ class CarlaState:
         # self.vehicle_id_stream.send(
         #     erdos.WatermarkMessage(erdos.Timestamp(is_top=True)))
         timestamp = 0
-        self.vehicle_id_msg = Message(timestamp, self._ego_vehicle.id)
-
+        self.vehicle_id_stream = Message(timestamp, self._ego_vehicle.id)
 
         # Send open drive string.
         # self.open_drive_stream.send(
@@ -375,10 +376,10 @@ class CarlaState:
         #                   self._world.get_map().to_opendrive()))
         # top_watermark = erdos.WatermarkMessage(erdos.Timestamp(is_top=True))
 
-        self.open_drive_msg = Message(timestamp, self._world.get_map().to_opendrive())
+        self.open_drive_stream = Message(timestamp, self._world.get_map().to_opendrive())
 
         # self.open_drive_stream.send(top_watermark)
-        # self.global_trajectory_stream.send(top_watermark)
+        self.global_trajectory_stream = timestamp
 
     def _update_spectactor_pose(self):
         # Set the world simulation view with respect to the vehicle.
@@ -432,15 +433,15 @@ class CarlaOperator():
         _state._world.on_tick(_state.send_actor_data)
         _state._tick_simulator()
 
-        result = {"pose_msg": _state.pose_msg,
-                  "pose_msg_for_control": _state.pose_msg_for_control,
-                  "ground_traffic_lights_msg": _state.ground_traffic_lights_msg,
-                  "ground_obstacles_msg": _state.ground_obstacles_msg,
-                  "ground_speed_limit_signs_msg": _state.ground_speed_limit_signs_msg,
-                  "ground_stop_signs_msg": _state.ground_stop_signs_msg,
-                  "vehicle_id_msg": _state.vehicle_id_msg,
-                  "open_drive_msg": _state.open_drive_msg,
-                  "global_trajectory_msg": _state.global_trajectory_msg,
+        result = {"pose_stream": _state.pose_stream,
+                  "pose_stream_for_control": _state.pose_stream_for_control,
+                  "ground_traffic_lights_stream": _state.ground_traffic_lights_stream,
+                  "ground_obstacles_stream": _state.ground_obstacles_stream,
+                  "ground_speed_limit_signs_stream": _state.ground_speed_limit_signs_stream,
+                  "ground_stop_signs_stream": _state.ground_stop_signs_stream,
+                  "vehicle_id_stream": _state.vehicle_id_stream,
+                  "open_drive_stream": _state.open_drive_stream,
+                  "global_trajectory_stream": _state.global_trajectory_stream,
                   "timestamp": _state.msg_timestamp
                   }
         return {'carlaOperatorMsg': pickle.dumps(result)}
