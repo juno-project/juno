@@ -4,32 +4,17 @@ using the simulator.
 The operator attaches a camera to the ego vehicle, receives camera frames from
 the simulator, and sends them on its output stream.
 """
-import logging
 import pickle
 import threading
-import time
 import pylot.utils
 from pylot.drivers.sensor_setup import RGBCameraSetup
 from pylot.perception.camera_frame import CameraFrame
 from pylot.perception.depth_frame import DepthFrame
 from pylot.perception.messages import DepthFrameMessage, FrameMessage, \
-    SegmentedFrameMessage, Message
+    SegmentedFrameMessage
 from pylot.perception.segmentation.segmented_frame import SegmentedFrame
 from pylot.simulation.utils import get_vehicle_handle, get_world, \
     set_simulation_mode
-
-
-
-
-def get_logger(log_file_name):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(level=logging.INFO)
-    handler = logging.FileHandler(log_file_name)
-    handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    return logger
 
 
 class CarlaCameraDriverState:
@@ -63,7 +48,7 @@ class CarlaCameraDriverState:
         # self._logger = erdos.utils.setup_logging(self.config.name,
         #                                          self.config.log_file_name)
 
-        self._logger = get_logger(cfg["log_file_name"])
+        self._logger = pylot.utils.get_logger(cfg["log_file_name"])
 
         # center_camera_setup = RGBCameraSetup('center_camera',
         #                                      FLAGS.camera_image_width,
@@ -79,7 +64,9 @@ class CarlaCameraDriverState:
                                       cfg["camera_fov"])
 
         self.notify_reading_msg = None
-        self.camera_msg = None
+        self._camera_stream = None
+        self._notify_reading_stream = None
+        self.msg_timestamp = 0
         self._camera_setup = camera_setup
         # The hero vehicle actor object we obtain from the simulator.
         self._vehicle = None
@@ -101,6 +88,7 @@ class CarlaCameraDriverState:
         # watermark_msg = erdos.WatermarkMessage(timestamp)
         timestamp = game_time
         watermark_msg = timestamp
+        self.msg_timestamp = game_time
         # with erdos.profile(self.config.name + '.process_images',
         #                    self,
         #                    event_data={'timestamp': str(timestamp)}):
@@ -132,7 +120,7 @@ class CarlaCameraDriverState:
             if self._release_data:
                 # self.cfg._camera_stream.send(msg)
                 # self.cfg._camera_stream.send(watermark_msg)
-                self.camera_msg = msg
+                self._camera_stream = msg
             else:
                 # Pickle the data, and release it upon release msg receipt.
                 pickled_msg = pickle.dumps(
@@ -140,7 +128,7 @@ class CarlaCameraDriverState:
                 with self._pickle_lock:
                     self._pickled_messages[msg.timestamp] = pickled_msg
                 # self._notify_reading_stream.send(watermark_msg)
-                self.notify_reading_msg = watermark_msg
+                self._notify_reading_stream = watermark_msg
 
     def release_data(self, timestamp):
         self._release_data = True
@@ -171,7 +159,7 @@ class CarlaCameraDriverOperator():
         token = tokens.get('carlaOperatorMsg').get_data()
         msg = pickle.loads(bytes(token))
 
-        state.vehicle_id_msg = msg['vehicle_id_msg']
+        state.vehicle_id_msg = msg['vehicle_id_stream']
         timestamp = msg['timestamp']
         state.release_data(timestamp)
 
@@ -232,7 +220,12 @@ class CarlaCameraDriverOperator():
 
         # Register the callback on the camera.
         _state._camera.listen(_state.process_images)
-        return {'carlaCameraDriverMsg': pickle.dumps(_state.camera_msg)}
+
+        result = {"camera_stream": _state._camera_stream,
+                  "notify_reading_stream": _state._notify_reading_stream,
+                  "timestamp": _state.msg_timestamp
+                  }
+        return {'carlaCameraDriverMsg': pickle.dumps(result)}
 
 
 def register():
@@ -243,16 +236,10 @@ if __name__ == '__main__':
 
     config = {
         "log_file_name": 'pylot.log',
-        "camera_name": 'center_camera_operator',
-        "camera_image_width": 1920,
-        "camera_image_height": 1080,
-        "camera_fov": 90.0,
-        "visualize_depth_camera": False,
         "name": "center_camera_operator",
         "simulator_host": 'localhost',
         "simulator_port": 2000,
         "simulator_timeout": 10,
-        "simulator_camera_frequency": -1,
         "simulator_mode": 'synchronous',
         "simulator_fps": 20
     }
