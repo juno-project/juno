@@ -1,9 +1,9 @@
 import os.path
+import pickle
 
-# test = open("./pylot/prediction/linear_predictor_operator.py", "r")       print(os.path.realpath(__file__))
-path = os.path.realpath("pylot/simulation/carla_operator.py")
-print("path:{}".format(path))
+# control_msg = pickle.load(open("/home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaOperator/input/ControlMessage.pkl", "rb"))
+control_msg = pickle.load(open("/home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaOperator/input/ControlMessage.pkl", "rb"))
 
-
+print(control_msg)
 
 

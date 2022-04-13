@@ -16,6 +16,7 @@ import pylot.utils
 from pylot.control.messages import ControlMessage
 from pylot.perception.messages import ObstaclesMessage, SpeedSignsMessage, \
     StopSignsMessage, TrafficLightsMessage, Message
+from zenoh_flow import  Inputs, Operator, Outputs
 
 class CarlaState:
     """Initializes and controls a CARLA simulation.
@@ -389,7 +390,7 @@ class CarlaState:
         self._spectator.set_transform(v_pose)
 
 
-class CarlaOperator():
+class CarlaOperator(Operator):
     def initialize(self, configuration):
         return CarlaState(configuration)
 

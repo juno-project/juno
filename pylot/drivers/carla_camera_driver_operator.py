@@ -4,6 +4,7 @@ using the simulator.
 The operator attaches a camera to the ego vehicle, receives camera frames from
 the simulator, and sends them on its output stream.
 """
+import os
 import pickle
 import threading
 import pylot.utils
@@ -15,7 +16,7 @@ from pylot.perception.messages import DepthFrameMessage, FrameMessage, \
 from pylot.perception.segmentation.segmented_frame import SegmentedFrame
 from pylot.simulation.utils import get_vehicle_handle, get_world, \
     set_simulation_mode
-
+from zenoh_flow import  Inputs, Operator, Outputs
 
 class CarlaCameraDriverState:
     """Publishes images onto the desired stream from a camera.
@@ -93,6 +94,7 @@ class CarlaCameraDriverState:
         #                    self,
         #                    event_data={'timestamp': str(timestamp)}):
         # Ensure that the code executes serially
+
         with self._lock:
             msg = None
             if self._camera_setup.camera_type == 'sensor.camera.rgb':
@@ -149,7 +151,7 @@ class CarlaCameraDriverState:
         #         del self._pickled_messages[timestamp]
 
 
-class CarlaCameraDriverOperator():
+class CarlaCameraDriverOperator(Operator):
 
     def initialize(self, configuration):
         return CarlaCameraDriverState(configuration)
@@ -225,6 +227,16 @@ class CarlaCameraDriverOperator():
                   "notify_reading_stream": _state._notify_reading_stream,
                   "timestamp": _state.msg_timestamp
                   }
+
+        if _state._camera_stream != None:
+            print("carlaCameraDriverMsg : {}".format(_state._camera_stream))
+            msg = _state._camera_stream
+            out_path = "/home/erdos/workspace/zenoh-flow-auto-driving/test_out"
+            os.makedirs(out_path, exist_ok=True)
+            msg.frame.save(msg.timestamp, out_path,
+                           'carla_camera_driver_operator-test_dtector-{}'.format(msg.timestamp))
+
+        print("carlaCameraDriverMsg : {}".format(result))
         return {'carlaCameraDriverMsg': pickle.dumps(result)}
 
 
