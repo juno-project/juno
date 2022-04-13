@@ -89,10 +89,19 @@ class TrafficLightDetOperator(Operator):
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        # token = tokens.get('carlaCameraDriverMsg').get_data()
-        token = tokens.get('carlaCameraDriverMsg').get_data()
-        msg = pickle.loads(bytes(token))
+        token = tokens.get('carlaCameraDriverMsg')
+        msg = pickle.loads(bytes(token.get_data()))
+        if msg['camera_stream'] == None:
+            token.set_action_drop()
+            return False
         state.camera_stream = msg['camera_stream']
+
+        # camera collection frame  output
+        out_path = "/home/erdos/workspace/zenoh-flow-auto-driving/test_out"
+        os.makedirs(out_path, exist_ok=True)
+        state.camera_stream.frame.save(state.camera_stream.timestamp, out_path,
+                        'tl-detector-{}'.format('TrafficLightDetOperator_input'))
+
         print("TrafficLightDetOperator state.camera_stream : {}".format(state.camera_stream))
         return True
 
@@ -103,12 +112,8 @@ class TrafficLightDetOperator(Operator):
         return None
 
     def run(self, _ctx, _state, inputs):
-        # msg = inputs.get("FrameMsg").data
-        if _state.camera_stream == None:
-            return {"TrafficLightsMsg": pickle.dumps(None)}
 
         msg = _state.camera_stream
-
         # print('@{}: {} received message'.format(
         #     msg.timestamp, 'TrafficLightDetOperator'))
 
