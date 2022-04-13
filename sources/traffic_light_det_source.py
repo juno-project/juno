@@ -1,4 +1,3 @@
-
 import sys
 sys.path.append('/home/zenoh-flow-auto-driving/')
 sys.path.append('/usr/lib/python3.8')
@@ -47,7 +46,7 @@ def register():
     return MySrc
 
 if __name__=='__main__':
-    config = {'fps': 1}
+    config = {'fps': 1, "image_path" : "/home/erdos/workspace/zenoh-flow-auto-driving/data/center-8711.png"}
     camera = MySrc()
     state = camera.initialize(config)
     camera.run(None, state)

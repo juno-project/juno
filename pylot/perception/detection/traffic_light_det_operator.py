@@ -8,6 +8,7 @@ from pylot.perception.detection.traffic_light import TrafficLight, \
     TrafficLightColor
 from pylot.perception.detection.utils import BoundingBox2D
 from pylot.perception.messages import TrafficLightsMessage
+from zenoh_flow import Inputs, Operator, Outputs
 
 import tensorflow as tf
 
@@ -22,7 +23,9 @@ class TrafficLightDetState:
 
         # Load the model from the saved_model format file.
         self.cfg = cfg
-        self._model = tf.saved_model.load(cfg['model_path'])
+        model_path = os.path.abspath(os.getenv("PYLOT_HOME") + cfg['model_path'])
+        print("model_path : {}".format(model_path))
+        self._model = tf.saved_model.load(model_path)
 
             #self._flags.traffic_light_det_model_path)
 
@@ -76,7 +79,7 @@ class TrafficLightDetState:
                 self._unique_id += 1
         return traffic_lights
 
-class TrafficLightDetOperator():
+class TrafficLightDetOperator(Operator):
     """Detects traffic lights using a TensorFlow model.
 
     The operator receives frames on a camera stream, and runs a model for each
@@ -86,6 +89,11 @@ class TrafficLightDetOperator():
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
+        # token = tokens.get('carlaCameraDriverMsg').get_data()
+        token = tokens.get('carlaCameraDriverMsg').get_data()
+        msg = pickle.loads(bytes(token))
+        state.camera_stream = msg['camera_stream']
+        print("TrafficLightDetOperator state.camera_stream : {}".format(state.camera_stream))
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
@@ -95,11 +103,18 @@ class TrafficLightDetOperator():
         return None
 
     def run(self, _ctx, _state, inputs):
-        msg = inputs.get("FrameMsg").data
-        msg = pickle.loads(msg)
+        # msg = inputs.get("FrameMsg").data
+        if _state.camera_stream == None:
+            return {"TrafficLightsMsg": pickle.dumps(None)}
 
-        print('@{}: {} received message'.format(
-            msg.timestamp, 'TrafficLightDetOperator'))
+        msg = _state.camera_stream
+
+        # print('@{}: {} received message'.format(
+        #     msg.timestamp, 'TrafficLightDetOperator'))
+
+        print('@{}: {} received message : {}'.format(
+            msg.timestamp, 'TrafficLightDetOperator', msg))
+
         assert msg.frame.encoding == 'BGR', 'Expects BGR frames'
         boxes, scores, labels = _state.run_model(msg.frame.as_rgb_numpy_array())
 

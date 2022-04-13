@@ -14,11 +14,15 @@ class MySink(Sink):
         return None
 
     def run(self, _ctx, _state, input):
+        print("traffic light sink-----------------------------------------")
         msg = pickle.loads(input.data)
-        traffic_lights = msg.obstacles
-        for traffic_light in traffic_lights:
-            print(f"traffic light color {traffic_light.state}")
-            print(f"traffic light score {traffic_light.confidence}")
+        if msg != None :
+            traffic_lights = msg.obstacles
+            for traffic_light in traffic_lights:
+                print(f"traffic light color----------------- {traffic_light.state}")
+                print(f"traffic light score-------------------- {traffic_light.confidence}")
+
+
 
 def register():
     return MySink
