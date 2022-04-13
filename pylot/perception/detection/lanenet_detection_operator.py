@@ -1,5 +1,6 @@
 import logging
 import math
+import os
 import pickle
 
 import cv2
@@ -20,6 +21,8 @@ from pylot.perception.messages import LanesMessage
 class LanenetDetectionState:
     def __init__(self, cfg):
         self.cfg = cfg
+        self.camera_stream = None
+        self._logger = pylot.utils.get_logger(cfg["log_file_name"])
         tf.compat.v1.disable_eager_execution()
         pylot.utils.set_tf_loglevel(logging.ERROR)
         self._input_tensor = tf.compat.v1.placeholder(dtype=tf.float32,
@@ -42,9 +45,12 @@ class LanenetDetectionState:
 
         self._postprocessor = lanenet_postprocess.LaneNetPostProcessor()
         saver = tf.compat.v1.train.Saver(variables_to_restore)
-        print("config path : {}".format(cfg["lanenet_detection_model_path"]))
+
+        lanenet_detection_model_path = os.path.abspath(os.getenv("PYLOT_HOME") + cfg['lanenet_detection_model_path'])
+        print("lanenet_detection_model_path : {}".format(lanenet_detection_model_path))
+
         with self._tf_session.as_default():
-            saver.restore(sess=self._tf_session, save_path=cfg["lanenet_detection_model_path"])
+            saver.restore(sess=self._tf_session, save_path=lanenet_detection_model_path)
 
     def lane_to_ego_coordinates(self, lane, camera_setup):
         """Transforms a lane represented as a pixel locations into 3D locations
@@ -82,6 +88,21 @@ class LanenetDetectionOperator():
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
+        # Using input rules
+        token = tokens.get('carlaCameraDriverMsg')
+        msg = pickle.loads(bytes(token.get_data()))
+        if msg['camera_stream'] == None:
+            token.set_action_drop()
+            return False
+        state.camera_stream = msg['camera_stream']
+
+        # camera collection frame  output
+        out_path = "/home/erdos/workspace/zenoh-flow-auto-driving/test_out"
+        os.makedirs(out_path, exist_ok=True)
+        state.camera_stream.frame.save(state.camera_stream.timestamp, out_path,
+                                       'tl-detector-{}'.format('LanenetDetOperator_input'))
+
+        print("LanenetDetectionOperator state.camera_stream : {}".format(state.camera_stream))
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
@@ -99,8 +120,7 @@ class LanenetDetectionOperator():
                         which the operator sends
                         :py:class:`~pylot.perception.messages.LanesMessage` messages.
                 """
-        msg = inputs.get("laneMsg").data
-        msg = pickle.loads(msg)
+        msg = _state.camera_stream
 
         print('@{}: {} received message'.format(
             msg.timestamp, 'LanenetDetectionOperator'))
@@ -168,7 +188,10 @@ class LanenetDetectionOperator():
         print('@{}: Detected {} lanes'.format(
             msg.timestamp, len(detected_lanes)))
 
-        print("detected_lanes: {}".format(detected_lanes[0]))
+        os.makedirs(_state.cfg['out_path'], exist_ok=True)
+        msg.frame.save(msg.timestamp, _state.cfg['out_path'],
+                                       'tl-detector-{}'.format('LanenetDetectionOperator'))
+
         return {'LanesMessage': pickle.dumps(LanesMessage(msg.timestamp, detected_lanes))}
         # return {"LanesMessage": pickle.dumps(msg)}
         # plt.figure('binary_image')

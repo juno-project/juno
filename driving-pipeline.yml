@@ -16,20 +16,20 @@ operators:
 #     outputs:
 #       - id: ObstaclesMsg
 #         type: usize
-  - id : TrafficLightDetOperator
-    uri: file://./pylot/perception/detection/traffic_light_det_operator.py
-    configuration:
-       traffic_light_det_gpu_index: 0
-       model_path: /dependencies/models/traffic_light_detection/faster-rcnn/
-       traffic_light_det_min_score_threshold: 3
-       log_traffic_light_detector_output: true
-       out_path: ./out_data/
-    inputs:
-       - id: carlaCameraDriverMsg
-         type: usize
-    outputs:
-       - id: TrafficLightsMsg
-         type: usize
+#  - id : TrafficLightDetOperator
+#    uri: file://./pylot/perception/detection/traffic_light_det_operator.py
+#    configuration:
+#       traffic_light_det_gpu_index: 0
+#       model_path: /dependencies/models/traffic_light_detection/faster-rcnn/
+#       traffic_light_det_min_score_threshold: 3
+#       log_traffic_light_detector_output: true
+#       out_path: ./out_data/
+#    inputs:
+#       - id: carlaCameraDriverMsg
+#         type: usize
+#    outputs:
+#       - id: TrafficLightsMsg
+#         type: usize
 #   - id: LocalizationOperator
 #     uri: file://./pylot/localization/localization_operator.py
 #     inputs:
@@ -91,18 +91,20 @@ operators:
 #      - id: ControlMsg
 #        type: usize
 #
-#  - id: LanenetDetectionOperator
-#    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
-#    configuration:
-#      lane_detection_gpu_index: 0
-#      lane_detection_gpu_memory_fraction: 3
-#      lanenet_detection_model_path:  /home/erdos/zenoh-flow-auto-driving/pylot/dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
-#    inputs:
-#      - id: laneMsg
-#        type: usize
-#    outputs:
-#      - id: LanesMessage
-#        type: usize
+  - id: LanenetDetectionOperator
+    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
+    configuration:
+      out_path: ./out_data/
+      log_file_name: pylot.log
+      lane_detection_gpu_index: 0
+      lane_detection_gpu_memory_fraction: 3
+      lanenet_detection_model_path:  /dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
+    inputs:
+      - id: carlaCameraDriverMsg
+        type: usize
+    outputs:
+      - id: LanesMessage
+        type: usize
 #
 #  - id: behaviorPlanningOperator
 #   uri: file://./pylot/planning/behavior_planning_operator.py
@@ -364,11 +366,11 @@ sinks:
 #     input:
 #         id: ObstaclesMsg
 #         type: usize
-  - id : TrafficLightSink
-    uri: file://./sinks/traffic_light_det_sink.py
-    input:
-       id: TrafficLightsMsg
-       type: usize
+#  - id : TrafficLightSink
+#    uri: file://./sinks/traffic_light_det_sink.py
+#    input:
+#       id: TrafficLightsMsg
+#       type: usize
 #   - id : LocalizationSink
 #     uri: file://./sinks/localization_sink.py
 #     input:
@@ -394,11 +396,11 @@ sinks:
 #    input:
 #        id: ControlMsg
 #        type: usize
-#  - id: LanenetDetectionSink
-#    uri: file://./sinks/lanenet_detection_sink.py
-#    input:
-#        id: LanesMessage
-#        type: usize
+  - id: LanenetDetectionSink
+    uri: file://./sinks/lanenet_detection_sink.py
+    input:
+        id: LanesMessage
+        type: usize
 #  - id: behaviorPlanningSink
 #    uri: file://./sinks/behavior_planning_sink.py
 #    input:
@@ -683,6 +685,32 @@ links:
 
 
 
+#- from:
+#    node : carlaSrc
+#    output : carlaMsg
+#  to:
+#    node : carlaOperator
+#    input : carlaMsg
+#- from:
+#    node : carlaOperator
+#    output : carlaOperatorMsg
+#  to:
+#    node : carlaCameraDriverOperator
+#    input : carlaOperatorMsg
+#- from:
+#    node : carlaCameraDriverOperator
+#    output : carlaCameraDriverMsg
+#  to:
+#    node : TrafficLightDetOperator
+#    input : carlaCameraDriverMsg
+#- from:
+#    node : TrafficLightDetOperator
+#    output : TrafficLightsMsg
+#  to:
+#    node : TrafficLightSink
+#    input : TrafficLightsMsg
+
+
 - from:
     node : carlaSrc
     output : carlaMsg
@@ -699,11 +727,11 @@ links:
     node : carlaCameraDriverOperator
     output : carlaCameraDriverMsg
   to:
-    node : TrafficLightDetOperator
+    node : LanenetDetectionOperator
     input : carlaCameraDriverMsg
 - from:
-    node : TrafficLightDetOperator
-    output : TrafficLightsMsg
+    node : LanenetDetectionOperator
+    output : LanesMessage
   to:
-    node : TrafficLightSink
-    input : TrafficLightsMsg
+    node : LanenetDetectionSink
+    input : LanesMessage
