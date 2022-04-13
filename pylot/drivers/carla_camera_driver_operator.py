@@ -228,15 +228,6 @@ class CarlaCameraDriverOperator(Operator):
                   "timestamp": _state.msg_timestamp
                   }
 
-        if _state._camera_stream != None:
-            print("carlaCameraDriverMsg : {}".format(_state._camera_stream))
-            msg = _state._camera_stream
-            out_path = "/home/erdos/workspace/zenoh-flow-auto-driving/test_out"
-            os.makedirs(out_path, exist_ok=True)
-            msg.frame.save(msg.timestamp, out_path,
-                           'carla_camera_driver_operator-test_dtector-{}'.format(msg.timestamp))
-
-        print("carlaCameraDriverMsg : {}".format(result))
         return {'carlaCameraDriverMsg': pickle.dumps(result)}
 
 
