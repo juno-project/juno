@@ -9,9 +9,7 @@ class Planner(object):
 
     All planners implement this interface.
     """
-    def __init__(self, world, flags, logger):
-        self._flags = flags
-        self._logger = logger
+    def __init__(self, world):
         self._world = world
         # TODO: Deal with the map
         self._map = None

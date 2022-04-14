@@ -2,58 +2,122 @@
 uuid: 00000000-0000-0000-0000-000000000000
 flow: AutoDrivingPipeline
 operators:
-  LocalizationOperator:
-    id: LocalizationOperator
+  PlanningOperator:
+    id: PlanningOperator
     inputs:
-      - port_id: localizationMsg
+      - port_id: PlanningMsg
         port_type: usize
     outputs:
-      - port_id: PoseMessage
+      - port_id: WaypointsMsg
         port_type: usize
-    uri: "file://./pylot/localization/localization_operator.py"
-    configuration: ~
+    uri: "file://./pylot/planning/planning_operator.py"
+    configuration:
+      angle_completion_threshold: 100
+      car_length: "4.8"
+      car_width: "1.8"
+      coast_factor: "1.75"
+      completion_threshold: 1
+      d_road_w: "0.25"
+      d_t_s: "0.25"
+      dt: "0.25"
+      dynamic_obstacle_distance_threshold: 50
+      end_dist_threshold: 2
+      execution_mode: simulation
+      ka: "0.1"
+      kd: 1
+      kj: "0.01"
+      klat: 1
+      klon: 1
+      ko: "0.1"
+      kt: "0.01"
+      kv: "0.1"
+      lane_width: 3
+      lane_width_hybrid_astar: 6
+      max_accel: 6
+      max_curvature: 1
+      max_iterations: 2000
+      max_iterations_hybrid_astar: 2000
+      max_road_width_l: 5
+      max_road_width_r: 1
+      max_speed: 35
+      maxt: 8
+      min_pid_steer_waypoint_distance: 5
+      mint: 2
+      n_s_sample: 2
+      num_waypoints_ahead: 60
+      obstacle_clearance: "0.5"
+      obstacle_clearance_fot: "0.5"
+      obstacle_clearance_hybrid_astar: 1
+      obstacle_filtering_distance: "1.0"
+      obstacle_radius: "1.0"
+      person_angle_emergency_zone: "0.5"
+      person_angle_hit_zone: "0.15"
+      person_distance_emergency_zone: 15
+      person_distance_hit_zone: 35
+      planning_type: waypoint
+      rad_lower_range: 4
+      rad_step: "0.5"
+      rad_upper_range: 4
+      radius: 6
+      simulator_host: localhost
+      simulator_port: 2000
+      simulator_timeout: 10
+      static_obstacle_distance_threshold: 70
+      step_size: "0.5"
+      step_size_hybrid_astar: 3
+      stop_at_uncontrolled_junctions: "False"
+      stop_for_people: "True"
+      stop_for_traffic_lights: "True"
+      stop_for_vehicles: "True"
+      target_speed: 10
+      tracking_num_steps: 10
+      traffic_light_max_angle: "0.6"
+      traffic_light_max_distance: 20
+      traffic_light_min_distance: 5
     deadline: ~
     runtime: foo
     ciclo: ~
 sinks:
-  LocalizationSink:
-    id: LocalizationSink
+  PlanningSink:
+    id: PlanningSink
     input:
-      port_id: PoseMessage
+      port_id: WaypointsMsg
       port_type: usize
-    uri: "file://./sinks/localization_sink.py"
+    uri: "file://./sinks/planning_sink.py"
     configuration: ~
     runtime: foo
 sources:
-  localizationSrc:
-    id: localizationSrc
+  PlanningSrc:
+    id: PlanningSrc
     output:
-      port_id: localizationMsg
+      port_id: PlanningMsg
       port_type: usize
     period: ~
-    uri: "file://./sources/localization_source.py"
+    uri: "file://./sources/planning_source.py"
     configuration:
-      gnss_path: "./test_data/LocalizationOperator/input/gnss/gnss-5643.pkl"
-      imu_path: "./test_data/LocalizationOperator/input/imu/imu-5643.pkl"
-      pose_path: "./test_data/LocalizationOperator/input/pose/pose-5643.pkl"
+      lane_msg: "./test_data/PlanningOperator/input/lane_msg-6423.pkl"
+      linear_prediction_msg: "./test_data/PlanningOperator/input/linear_prediction_msg-6423.pkl"
+      open_drive_msg: "./test_data/PlanningOperator/input/open_drive_msg-0.pkl"
+      trajectory_msg: "./test_data/PlanningOperator/input/trajectory_msg-5673.pkl"
+      vehicle_transform: "./test_data/PlanningOperator/input/vehicle_transform-6423.pkl"
     runtime: foo
 connectors: []
 links:
   - from:
-      node: localizationSrc
-      output: localizationMsg
+      node: PlanningSrc
+      output: PlanningMsg
     to:
-      node: LocalizationOperator
-      input: localizationMsg
+      node: PlanningOperator
+      input: PlanningMsg
     size: ~
     queueing_policy: ~
     priority: ~
   - from:
-      node: LocalizationOperator
-      output: PoseMessage
+      node: PlanningOperator
+      output: WaypointsMsg
     to:
-      node: LocalizationSink
-      input: PoseMessage
+      node: PlanningSink
+      input: WaypointsMsg
     size: ~
     queueing_policy: ~
     priority: ~
