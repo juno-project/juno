@@ -1,8 +1,6 @@
-import time
-
 from frenet_optimal_trajectory_planner.FrenetOptimalTrajectory.fot_wrapper \
     import run_fot
-
+import time
 from pylot.planning.planner import Planner
 
 
@@ -16,32 +14,33 @@ class FOTPlanner(Planner):
     .. _Frenet Optimal Trajectory Planner:
        https://github.com/erdos-project/frenet_optimal_trajectory_planner
     """
-    def __init__(self, world, flags, logger):
-        super().__init__(world, flags, logger)
+    def __init__(self, world, hyperparameters):
+        super().__init__(world)
         self.s0 = 0.0
         self._hyperparameters = {
             "num_threads": 1,
-            "max_speed": flags.max_speed,
-            "max_accel": flags.max_accel,
-            "max_curvature": flags.max_curvature,
-            "max_road_width_l": flags.max_road_width_l,
-            "max_road_width_r": flags.max_road_width_r,
-            "d_road_w": flags.d_road_w,
-            "dt": flags.dt,
-            "maxt": flags.maxt,
-            "mint": flags.mint,
-            "d_t_s": flags.d_t_s,
-            "n_s_sample": flags.n_s_sample,
-            "obstacle_clearance": flags.obstacle_clearance_fot,
-            "kd": flags.kd,
-            "kv": flags.kv,
-            "ka": flags.ka,
-            "kj": flags.kj,
-            "kt": flags.kt,
-            "ko": flags.ko,
-            "klat": flags.klat,
-            "klon": flags.klon
+            "max_speed": hyperparameters['max_speed'],
+            "max_accel": hyperparameters['max_accel'],
+            "max_curvature": hyperparameters['max_curvature'],
+            "max_road_width_l": hyperparameters['max_road_width_l'],
+            "max_road_width_r": hyperparameters['max_road_width_r'],
+            "d_road_w": hyperparameters['d_road_w'],
+            "dt": hyperparameters['dt'],
+            "maxt": hyperparameters['maxt'],
+            "mint": hyperparameters['mint'],
+            "d_t_s": hyperparameters['d_t_s'],
+            "n_s_sample": hyperparameters['n_s_sample'],
+            "obstacle_clearance": hyperparameters['obstacle_clearance_fot'],
+            "kd": hyperparameters['kd'],
+            "kv": hyperparameters['kv'],
+            "ka": hyperparameters['ka'],
+            "kj": hyperparameters['kj'],
+            "kt": hyperparameters['kt'],
+            "ko": hyperparameters['ko'],
+            "klat": hyperparameters['klat'],
+            "klon": hyperparameters['klon']
         }
+        print("planner initialized")
 
     def fot_parameters_using_99_percentile(self, ttd):
         maxt = self._flags.maxt
@@ -53,7 +52,7 @@ class FOTPlanner(Planner):
             if ttd >= runtime:
                 return maxt, dts[index], d_road_ws[index]
         # Not enough time to run the planner.
-        self._logger.error(
+        print(
             'Not enough time to run the planner. Using the fastest version')
         return maxt, dts[-1], d_road_ws[-1]
 
@@ -67,7 +66,7 @@ class FOTPlanner(Planner):
                 self._flags.planning_deadline)
         else:
             return
-        self._logger.debug(
+        print(
             '@{}: planner using maxt {}, dt {}, d_road_w {}'.format(
                 timestamp, maxt, dt, d_road_w))
         self._hyperparameters['maxt'] = maxt
@@ -85,24 +84,24 @@ class FOTPlanner(Planner):
             planned trajectory.
         """
         self.update_hyper_parameters(timestamp, ttd)
-        self._logger.debug("@{}: Hyperparameters: {}".format(
+        print("@{}: Hyperparameters: {}".format(
             timestamp, self._hyperparameters))
         initial_conditions = self._compute_initial_conditions()
-        self._logger.debug("@{}: Initial conditions: {}".format(
+        print("@{}: Initial conditions: {}".format(
             timestamp, initial_conditions))
         start = time.time()
         (path_x, path_y, speeds, ix, iy, iyaw, d, s, speeds_x, speeds_y, misc,
          costs, success) = run_fot(initial_conditions, self._hyperparameters)
         fot_runtime = (time.time() - start) * 1000
-        self._logger.debug('@{}: Frenet runtime {}'.format(
+        print('@{}: Frenet runtime {}'.format(
             timestamp, fot_runtime))
         if success:
-            self._logger.debug("@{}: Frenet succeeded.".format(timestamp))
+            print("@{}: Frenet succeeded.".format(timestamp))
             self._log_output(timestamp, path_x, path_y, speeds, ix, iy, iyaw,
                              d, s, speeds_x, speeds_y, costs)
             output_wps = self.build_output_waypoints(path_x, path_y, speeds)
         else:
-            self._logger.debug(
+            print(
                 "@{}: Frenet failed. Sending emergency stop.".format(
                     timestamp))
             output_wps = self._world.follow_waypoints(0)
@@ -133,20 +132,20 @@ class FOTPlanner(Planner):
 
     def _log_output(self, timestamp, path_x, path_y, speeds, ix, iy, iyaw, d,
                     s, speeds_x, speeds_y, costs):
-        self._logger.debug("@{}: Frenet Path X: {}".format(
+        print("@{}: Frenet Path X: {}".format(
             timestamp, path_x.tolist()))
-        self._logger.debug("@{}: Frenet Path Y: {}".format(
+        print("@{}: Frenet Path Y: {}".format(
             timestamp, path_y.tolist()))
-        self._logger.debug("@{}: Frenet Speeds: {}".format(
+        print("@{}: Frenet Speeds: {}".format(
             timestamp, speeds.tolist()))
-        self._logger.debug("@{}: Frenet IX: {}".format(timestamp, ix.tolist()))
-        self._logger.debug("@{}: Frenet IY: {}".format(timestamp, iy.tolist()))
-        self._logger.debug("@{}: Frenet IYAW: {}".format(
+        print("@{}: Frenet IX: {}".format(timestamp, ix.tolist()))
+        print("@{}: Frenet IY: {}".format(timestamp, iy.tolist()))
+        print("@{}: Frenet IYAW: {}".format(
             timestamp, iyaw.tolist()))
-        self._logger.debug("@{}: Frenet D: {}".format(timestamp, d.tolist()))
-        self._logger.debug("@{}: Frenet S: {}".format(timestamp, s.tolist()))
-        self._logger.debug("@{}: Frenet Speeds X: {}".format(
+        print("@{}: Frenet D: {}".format(timestamp, d.tolist()))
+        print("@{}: Frenet S: {}".format(timestamp, s.tolist()))
+        print("@{}: Frenet Speeds X: {}".format(
             timestamp, speeds_x.tolist()))
-        self._logger.debug("@{}: Frenet Speeds Y: {}".format(
+        print("@{}: Frenet Speeds Y: {}".format(
             timestamp, speeds_y.tolist()))
-        self._logger.debug("@{}: Frenet Costs: {}".format(timestamp, costs))
+        print("@{}: Frenet Costs: {}".format(timestamp, costs))

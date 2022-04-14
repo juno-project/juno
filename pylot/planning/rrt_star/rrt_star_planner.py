@@ -17,19 +17,21 @@ class RRTStarPlanner(Planner):
     .. _RRT* Planner:
        https://github.com/erdos-project/rrt_star_planner
     """
-    def __init__(self, world, flags, logger):
-        super().__init__(world, flags, logger)
+    def __init__(self, world, rrt_star_parameters):
+        print("start initializing rrt_start_planner")
+        super().__init__(world)
         self._hyperparameters = {
-            "step_size": flags.step_size,
-            "max_iterations": flags.max_iterations,
-            "end_dist_threshold": flags.end_dist_threshold,
-            "obstacle_clearance": flags.obstacle_clearance_rrt,
-            "lane_width": flags.lane_width,
+            "step_size": rrt_star_parameters['step_size'],
+            "max_iterations": rrt_star_parameters['max_iterations'],
+            "end_dist_threshold": rrt_star_parameters['end_dist_threshold'],
+            "obstacle_clearance": rrt_star_parameters['obstacle_clearance'],
+            "lane_width": rrt_star_parameters['lane_width']
         }
+        print("rrt_star_planner initilized")
 
     def run(self, timestamp, ttd=None):
         """Runs the planner.
-
+   
         Note:
             The planner assumes that the world is up-to-date.
 
@@ -46,27 +48,27 @@ class RRTStarPlanner(Planner):
             # RRT* does not take into account the driveable region.
             # It constructs search space as a top down, minimum bounding
             # rectangle with padding in each dimension.
-            self._logger.debug("@{}: Hyperparameters: {}".format(
+            print("@{}: Hyperparameters: {}".format(
                 timestamp, self._hyperparameters))
             initial_conditions = self._compute_initial_conditions(
                 obstacle_list)
-            self._logger.debug("@{}: Initial conditions: {}".format(
+            print("@{}: Initial conditions: {}".format(
                 timestamp, initial_conditions))
             path_x, path_y, success = apply_rrt_star(initial_conditions,
                                                      self._hyperparameters)
             if success:
-                self._logger.debug("@{}: RRT* succeeded".format(timestamp))
+                print("@{}: RRT* succeeded".format(timestamp))
                 speeds = [self._flags.target_speed] * len(path_x)
-                self._logger.debug("@{}: RRT* Path X: {}".format(
+                print("@{}: RRT* Path X: {}".format(
                     timestamp, path_x.tolist()))
-                self._logger.debug("@{}: RRT* Path Y: {}".format(
+                print("@{}: RRT* Path Y: {}".format(
                     timestamp, path_y.tolist()))
-                self._logger.debug("@{}: RRT* Speeds: {}".format(
+                print("@{}: RRT* Speeds: {}".format(
                     timestamp, speeds))
                 output_wps = self.build_output_waypoints(
                     path_x, path_y, speeds)
             else:
-                self._logger.error("@{}: RRT* failed. "
+                print("@{}: RRT* failed. "
                                    "Sending emergency stop.".format(timestamp))
                 output_wps = self._world.follow_waypoints(0)
         return output_wps
@@ -78,7 +80,7 @@ class RRTStarPlanner(Planner):
                         len(self._world.waypoints.waypoints) - 1)
         if end_index < 0:
             # If no more waypoints left. Then our location is our end wp.
-            self._logger.debug("@{}: No more waypoints left")
+            print("@{}: No more waypoints left")
             end_wp = ego_transform
         else:
             end_wp = self._world.waypoints.waypoints[end_index]

@@ -13,17 +13,15 @@ from pylot.planning.waypoints import Waypoints
 # Number of predicted locations to consider when computing speed factors.
 NUM_FUTURE_TRANSFORMS = 10
 
-
 class World(object):
     """A representation of the world that is used by the planners."""
-    def __init__(self, flags, logger):
-        self._flags = flags
-        self._logger = logger
+
+    def __init__(self, world_params):
+        print("init world")
         self.static_obstacles = None
         self.obstacle_predictions = []
         self._ego_obstacle_predictions = []
         self.pose = None
-        self.ego_trajectory = deque(maxlen=self._flags.tracking_num_steps)
         self.ego_transform = None
         self.ego_velocity_vector = None
         self._lanes = None
@@ -34,18 +32,38 @@ class World(object):
         self._last_stop_ego_location = None
         self._distance_since_last_full_stop = 0
         self._num_ticks_stopped = 0
+        self.tracking_num_steps = world_params['tracking_num_steps']
+        self.ego_trajectory = deque(maxlen=self.tracking_num_steps)
+        self.static_obstacle_distance_threshold = world_params['static_obstacle_distance_threshold']
+        self.num_waypoints_ahead = world_params['num_waypoints_ahead']
+        self.obstacle_filtering_distance = world_params['obstacle_filtering_distance']
+        self.dynamic_obstacle_distance_threshold = world_params[
+            'dynamic_obstacle_distance_threshold']
+        self.obstacle_radius = world_params['obstacle_radius']
+        self.min_pid_steer_waypoint_distance = world_params['min_pid_steer_waypoint_distance']
+        self.stop_for_people = world_params['stop_for_people']
+        self.stop_for_vehicles = world_params['stop_for_vehicles']
+        self.stop_for_traffic_lights = world_params['stop_for_traffic_lights']
+        self.stop_at_uncontrolled_junctions = world_params['stop_at_uncontrolled_junctions']
+        self.traffic_light_min_distance = world_params['traffic_light_min_distance']
+        self.traffic_light_max_distance = world_params['traffic_light_max_distance']
+        self.traffic_light_max_angle = world_params['traffic_light_max_angle']
+        self.coast_factor = world_params['coast_factor']
+        self.person_angle_hit_zone = world_params['person_angle_hit_zone']
+        self.person_distance_hit_zone = world_params['person_distance_hit_zone']
+        self.person_angle_emergency_zone = world_params['person_angle_emergency_zone']
+        self.person_distance_emergency_zone = world_params['person_distance_emergency_zone']
+        print("world initialized")
 
     def update(self,
                timestamp,
-               pose,
+               transform,
                obstacle_predictions,
                static_obstacles,
                hd_map=None,
                lanes=None):
         self.timestamp = timestamp
-        self.pose = pose
-        self.ego_transform = pose.transform
-        self.ego_velocity_vector = pose.velocity_vector
+        self.ego_transform = transform
         self.ego_trajectory.append(self.ego_transform)
         self.obstacle_predictions = obstacle_predictions
         self._ego_obstacle_predictions = copy.deepcopy(obstacle_predictions)
@@ -58,11 +76,11 @@ class World(object):
         for obstacle in static_obstacles:
             if (obstacle.transform.location.distance(
                     self.ego_transform.location) <=
-                    self._flags.static_obstacle_distance_threshold):
+                    self.static_obstacle_distance_threshold):
                 self.static_obstacles.append(obstacle)
 
         if hd_map is None and lanes is None:
-            self._logger.error(
+            print(
                 '@{}: planning world does not have lanes or HD map'.format(
                     timestamp))
         self._map = hd_map
@@ -77,22 +95,24 @@ class World(object):
                                                    self.ego_transform.location,
                                                    self._goal_location)
 
-        if pose.forward_speed < 0.7:
-            # We can't just check if forward_speed is zero because localization
-            # noise can cause the forward_speed to be non zero even when the
-            # ego is stopped.
-            self._num_ticks_stopped += 1
-            if self._num_ticks_stopped > 10:
-                self._distance_since_last_full_stop = 0
-                self._last_stop_ego_location = self.ego_transform.location
+        # if pose.forward_speed < 0.7:
+        #     # We can't just check if forward_speed is zero because localization
+        #     # noise can cause the forward_speed to be non zero even when the
+        #     # ego is stopped.
+        #     self._num_ticks_stopped += 1
+        #     if self._num_ticks_stopped > 10:
+        #         self._distance_since_last_full_stop = 0
+        #         self._last_stop_ego_location = self.ego_transform.location
+        # else:
+        self._num_ticks_stopped = 0
+        if self._last_stop_ego_location is not None:
+            self._distance_since_last_full_stop = \
+                self.ego_transform.location.distance(
+                    self._last_stop_ego_location)
         else:
-            self._num_ticks_stopped = 0
-            if self._last_stop_ego_location is not None:
-                self._distance_since_last_full_stop = \
-                    self.ego_transform.location.distance(
-                        self._last_stop_ego_location)
-            else:
-                self._distance_since_last_full_stop = 0
+            self._distance_since_last_full_stop = 0
+
+        print("world updated")
 
     def update_waypoints(self, goal_location, waypoints):
         self._goal_location = goal_location
@@ -102,7 +122,7 @@ class World(object):
         self.waypoints.remove_completed(self.ego_transform.location,
                                         self.ego_transform)
         return self.waypoints.slice_waypoints(0,
-                                              self._flags.num_waypoints_ahead,
+                                              self.num_waypoints_ahead,
                                               target_speed)
 
     def get_obstacle_list(self):
@@ -115,16 +135,16 @@ class World(object):
                 if (previous_origin is None
                         or previous_origin.location.l2_distance(
                             transform.location) >
-                        self._flags.obstacle_filtering_distance):
+                        self.obstacle_filtering_distance):
                     previous_origin = transform
                     # Ensure the prediction is nearby.
                     if (self.ego_transform.location.l2_distance(
                             transform.location) <=
-                            self._flags.dynamic_obstacle_distance_threshold):
+                            self.dynamic_obstacle_distance_threshold):
                         obstacle = prediction.obstacle_trajectory.obstacle
                         obstacle_corners = \
                             obstacle.get_bounding_box_corners(
-                                transform, self._flags.obstacle_radius)
+                                transform, self.obstacle_radius)
                         obstacle_list.append(obstacle_corners)
         if len(obstacle_list) == 0:
             return np.empty((0, 4))
@@ -176,24 +196,26 @@ class World(object):
                                 self.ego_transform.location, transform.location
                             ), obstacle.predicted_trajectory)):
                     # The person is not going to be on the same lane.
-                    self._logger.debug(
+                    print(
                         'Ignoring ({},{}); not going to be on the same lane'.
                         format(obstacle.label, obstacle.id))
                     return 1
         else:
-            self._logger.warning(
+            print(
                 'No HDMap. All people are considered for stopping.')
         ego_location_2d = self.ego_transform.location.as_vector_2D()
         min_speed_factor_p = compute_person_speed_factor(
             ego_location_2d, obstacle.transform.location.as_vector_2D(),
-            wp_vector, self._flags, self._logger)
+            wp_vector, self.person_angle_hit_zone, self.person_distance_hit_zone, self.coast_factor,
+            self.person_angle_emergency_zone, self.person_distance_emergency_zone)
         transforms = itertools.islice(
             obstacle.predicted_trajectory, 0,
             min(NUM_FUTURE_TRANSFORMS, len(obstacle.predicted_trajectory)))
         for person_transform in transforms:
             speed_factor_p = compute_person_speed_factor(
                 ego_location_2d, person_transform.location.as_vector_2D(),
-                wp_vector, self._flags, self._logger)
+                wp_vector, self.person_angle_hit_zone, self.person_distance_hit_zone, self.coast_factor,
+                self.person_angle_emergency_zone, self.person_distance_emergency_zone)
             min_speed_factor_p = min(min_speed_factor_p, speed_factor_p)
         return min_speed_factor_p
 
@@ -225,25 +247,27 @@ class World(object):
                                 self.ego_transform.location, transform.location
                             ), obstacle.predicted_trajectory)):
                     # The vehicle is not going to be on the same lane as ego.
-                    self._logger.debug(
+                    print(
                         'Ignoring ({},{}); not going to be on the same lane'.
                         format(obstacle.label, obstacle.id))
                     return 1
         else:
-            self._logger.warning(
+            print(
                 'No HDMap. All vehicles are considered for stopping.')
 
         ego_location_2d = self.ego_transform.location.as_vector_2D()
         min_speed_factor_v = compute_vehicle_speed_factor(
             ego_location_2d, obstacle.transform.location.as_vector_2D(),
-            wp_vector, self._flags, self._logger)
+            wp_vector, self.person_angle_hit_zone, self.person_distance_hit_zone, self.coast_factor,
+            self.person_angle_emergency_zone, self.person_distance_emergency_zone)
         transforms = itertools.islice(
             obstacle.predicted_trajectory, 0,
             min(NUM_FUTURE_TRANSFORMS, len(obstacle.predicted_trajectory)))
         for vehicle_transform in transforms:
             speed_factor_v = compute_vehicle_speed_factor(
                 ego_location_2d, vehicle_transform.location.as_vector_2D(),
-                wp_vector, self._flags, self._logger)
+                wp_vector, self.person_angle_hit_zone, self.person_distance_hit_zone, self.coast_factor,
+                self.person_angle_emergency_zone, self.person_distance_emergency_zone)
             min_speed_factor_v = min(min_speed_factor_v, speed_factor_v)
         return min_speed_factor_v
 
@@ -262,55 +286,55 @@ class World(object):
             self.waypoints.remove_completed(self.ego_transform.location)
             wp_vector = self.waypoints.get_vector(
                 self.ego_transform,
-                self._flags.min_pid_steer_waypoint_distance)
+                self.min_pid_steer_waypoint_distance)
             wp_angle = self.waypoints.get_angle(
                 self.ego_transform,
-                self._flags.min_pid_steer_waypoint_distance)
+                self.min_pid_steer_waypoint_distance)
         except ValueError:
             # No more waypoints to follow.
-            self._logger.debug(
+            print(
                 '@{}: no more waypoints to follow, target speed 0')
             return (0, 0, 0, 0, 0)
 
         for obstacle in self.obstacle_predictions:
-            if obstacle.is_person() and self._flags.stop_for_people:
+            if obstacle.is_person() and self.stop_for_people:
                 new_speed_factor_p = self.stop_person(obstacle, wp_vector)
                 if new_speed_factor_p < speed_factor_p:
                     speed_factor_p = new_speed_factor_p
-                    self._logger.debug(
+                    print(
                         '@{}: person {} reduced speed factor to {}'.format(
                             timestamp, obstacle.id, speed_factor_p))
-            elif obstacle.is_vehicle() and self._flags.stop_for_vehicles:
+            elif obstacle.is_vehicle() and self.stop_for_vehicles:
                 new_speed_factor_v = self.stop_vehicle(obstacle, wp_vector)
                 if new_speed_factor_v < speed_factor_v:
                     speed_factor_v = new_speed_factor_v
-                    self._logger.debug(
+                    print(
                         '@{}: vehicle {} reduced speed factor to {}'.format(
                             timestamp, obstacle.id, speed_factor_v))
             else:
-                self._logger.debug('@{}: filtering obstacle {}'.format(
+                print('@{}: filtering obstacle {}'.format(
                     timestamp, obstacle.label))
 
         semaphorized_junction = False
         for obstacle in self.static_obstacles:
             if (obstacle.is_traffic_light()
-                    and self._flags.stop_for_traffic_lights):
+                    and self.stop_for_traffic_lights):
                 valid_tl, new_speed_factor_tl = self.stop_traffic_light(
                     obstacle, wp_vector, wp_angle)
                 semaphorized_junction = semaphorized_junction or valid_tl
                 if new_speed_factor_tl < speed_factor_tl:
                     speed_factor_tl = new_speed_factor_tl
-                    self._logger.debug(
+                    print(
                         '@{}: traffic light {} reduced speed factor to {}'.
                         format(timestamp, obstacle.id, speed_factor_tl))
 
-        if self._flags.stop_at_uncontrolled_junctions:
+        if self.stop_at_uncontrolled_junctions:
             if (self._map is not None and not semaphorized_junction
                     and not self._map.is_intersection(
                         self.ego_transform.location)):
                 dist_to_junction = self._map.distance_to_intersection(
                     self.ego_transform.location, max_distance_to_check=13)
-                self._logger.debug('@{}: dist to junc {}, last stop {}'.format(
+                print('@{}: dist to junc {}, last stop {}'.format(
                     timestamp, dist_to_junction,
                     self._distance_since_last_full_stop))
                 if (dist_to_junction is not None
@@ -319,7 +343,7 @@ class World(object):
 
         speed_factor = min(speed_factor_tl, speed_factor_p, speed_factor_v,
                            speed_factor_stop)
-        self._logger.debug(
+        print(
             '@{}: speed factors: person {}, vehicle {}, traffic light {},'
             ' stop {}'.format(timestamp, speed_factor_p, speed_factor_v,
                               speed_factor_tl, speed_factor_stop))
@@ -342,17 +366,17 @@ class World(object):
             # The traffic light is not relevant to the ego vehicle.
             if not self._map.must_obey_traffic_light(
                     self.ego_transform.location, tl.transform.location):
-                self._logger.debug(
+                print(
                     'Ignoring traffic light {} that must not be obeyed'.format(
                         tl))
                 return False, 1
         else:
-            self._logger.warning(
+            print(
                 'No HDMap. All traffic lights are considered for stopping.')
         # The ego vehicle is too close to the traffic light.
         if (self.ego_transform.location.distance(tl.transform.location) <
-                self._flags.traffic_light_min_distance):
-            self._logger.debug(
+                self.traffic_light_min_distance):
+            print(
                 'Ignoring traffic light {}; vehicle is too close'.format(tl))
             return True, 1
         # The ego vehicle can carry on driving.
@@ -362,16 +386,16 @@ class World(object):
 
         height_delta = tl.transform.location.z - self.ego_transform.location.z
         if height_delta > 4:
-            self._logger.debug('Traffic light is American style')
+            print('Traffic light is American style')
             # The traffic ligh is across the road. Increase the max distance.
             traffic_light_max_distance = \
-                self._flags.traffic_light_max_distance * 2.5
-            traffic_light_max_angle = self._flags.traffic_light_max_angle / 3
+                self.traffic_light_max_distance * 2.5
+            traffic_light_max_angle = self.traffic_light_max_angle / 3
             american_tl = True
         else:
-            self._logger.debug('Traffic light is European style')
-            traffic_light_max_distance = self._flags.traffic_light_max_distance
-            traffic_light_max_angle = self._flags.traffic_light_max_angle
+            print('Traffic light is European style')
+            traffic_light_max_distance = self.traffic_light_max_distance
+            traffic_light_max_angle = self.traffic_light_max_angle
             american_tl = False
         speed_factor_tl = 1
         ego_location_2d = self.ego_transform.location.as_vector_2D()
@@ -379,7 +403,7 @@ class World(object):
         tl_vector = tl_location_2d - ego_location_2d
         tl_dist = tl_location_2d.l2_distance(ego_location_2d)
         tl_angle = tl_vector.get_angle(wp_vector)
-        self._logger.debug(
+        print(
             'Traffic light vector {}; dist {}; angle {}; wp_angle {}'.format(
                 tl_vector, tl_dist, tl_angle, wp_angle))
         if (-0.2 <= tl_angle < traffic_light_max_angle
@@ -388,20 +412,20 @@ class World(object):
             # vehicle path, and is not too far away.
             speed_factor_tl = min(
                 speed_factor_tl, tl_dist /
-                (self._flags.coast_factor * traffic_light_max_distance))
+                (self.coast_factor * traffic_light_max_distance))
 
         if (-0.2 <= tl_angle <
-                traffic_light_max_angle / self._flags.coast_factor and
-                tl_dist < traffic_light_max_distance * self._flags.coast_factor
+                traffic_light_max_angle / self.coast_factor and
+                tl_dist < traffic_light_max_distance * self.coast_factor
                 and math.fabs(wp_angle) < 0.2):
             # The ego is pretty far away, so the angle to the traffic light has
             # to be smaller, and the vehicle must be driving straight.
             speed_factor_tl = min(
                 speed_factor_tl, tl_dist /
-                (self._flags.coast_factor * traffic_light_max_distance))
+                (self.coast_factor * traffic_light_max_distance))
 
         if (-0.2 <= tl_angle <
-                traffic_light_max_angle * self._flags.coast_factor
+                traffic_light_max_angle * self.coast_factor
                 and math.fabs(wp_angle) < 0.2):
             if american_tl:
                 if (-0.1 <= tl_angle < traffic_light_max_angle
@@ -419,7 +443,7 @@ class World(object):
                         speed_factor_tl = 0
             else:
                 if (tl_dist <
-                        traffic_light_max_distance / self._flags.coast_factor):
+                        traffic_light_max_distance / self.coast_factor):
                     # The traffic light is nearby and the vehicle is driving
                     # straight; the angle to the traffic light can be higher.
                     speed_factor_tl = 0
@@ -432,7 +456,7 @@ class World(object):
                 # XXX(ionel): Hack to avoid getting stuck when we're far
                 # from intersections (see scenario 28 in the challenge training
                 # routes).
-                self._logger.warning(
+                print(
                     'Ignored traffic light speed factor because junction '
                     'is not nearby')
                 return True, 1
