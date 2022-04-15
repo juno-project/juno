@@ -435,7 +435,7 @@ sources:
 #       id: carlaCameraMsg
 #       type: usize
 
-- id: PlanningSrc
+  - id: PlanningSrc
     uri: file://./sources/planning_source.py
     configuration:
       lane_msg: ./test_data/PlanningOperator/input/lane_msg-6423.pkl
