@@ -20,21 +20,21 @@ class HybridAStarPlanner(Planner):
     .. _Hybrid A* Planner:
        https://github.com/erdos-project/hybrid_astar_planner
     """
-    def __init__(self, world, flags, logger):
-        super().__init__(world, flags, logger)
+    def __init__(self, world, hybrid_parameters):
+        super().__init__(world)
         self._hyperparameters = {
-            "step_size": flags.step_size_hybrid_astar,
-            "max_iterations": flags.max_iterations_hybrid_astar,
-            "completion_threshold": flags.completion_threshold,
-            "angle_completion_threshold": flags.angle_completion_threshold,
-            "rad_step": flags.rad_step,
-            "rad_upper_range": flags.rad_upper_range,
-            "rad_lower_range": flags.rad_lower_range,
-            "obstacle_clearance": flags.obstacle_clearance_hybrid_astar,
-            "lane_width": flags.lane_width_hybrid_astar,
-            "radius": flags.radius,
-            "car_length": flags.car_length,
-            "car_width": flags.car_width,
+            "step_size": hybrid_parameters['max_iterations_hybrid_astar'],
+            "max_iterations": hybrid_parameters['max_iterations_hybrid_astar'],
+            "completion_threshold": hybrid_parameters['completion_threshold'],
+            "angle_completion_threshold": hybrid_parameters['angle_completion_threshold'],
+            "rad_step": hybrid_parameters['rad_step'],
+            "rad_upper_range": hybrid_parameters['rad_upper_range'],
+            "rad_lower_range": hybrid_parameters['rad_lower_range'],
+            "obstacle_clearance": hybrid_parameters['obstacle_clearance_hybrid_astar'],
+            "lane_width": hybrid_parameters['lane_width_hybrid_astar'],
+            "radius": hybrid_parameters['radius'],
+            "car_length": hybrid_parameters['car_length'],
+            "car_width": hybrid_parameters['car_width']
         }
 
     def run(self, timestamp, ttd=None):
@@ -56,28 +56,28 @@ class HybridAStarPlanner(Planner):
             # Hybrid a* does not take into account the driveable region.
             # It constructs search space as a top down, minimum bounding
             # rectangle with padding in each dimension.
-            self._logger.debug("@{}: Hyperparameters: {}".format(
+            print("@{}: Hyperparameters: {}".format(
                 timestamp, self._hyperparameters))
             initial_conditions = self._compute_initial_conditions(
                 obstacle_list)
-            self._logger.debug("@{}: Initial conditions: {}".format(
+            print("@{}: Initial conditions: {}".format(
                 timestamp, initial_conditions))
             path_x, path_y, _, success = apply_hybrid_astar(
                 initial_conditions, self._hyperparameters)
             if success:
-                self._logger.debug(
+                print(
                     "@{}: Hybrid A* succeeded".format(timestamp))
                 speeds = [self._flags.target_speed] * len(path_x)
-                self._logger.debug("@{}: Hybrid A* Path X: {}".format(
+                print("@{}: Hybrid A* Path X: {}".format(
                     timestamp, path_x.tolist()))
-                self._logger.debug("@{}: Hybrid A* Path Y: {}".format(
+                print("@{}: Hybrid A* Path Y: {}".format(
                     timestamp, path_y.tolist()))
-                self._logger.debug("@{}: Hybrid A* Speeds: {}".format(
+                print("@{}: Hybrid A* Speeds: {}".format(
                     timestamp, speeds))
                 output_wps = self.build_output_waypoints(
                     path_x, path_y, speeds)
             else:
-                self._logger.error("@{}: Hybrid A* failed. "
+                print("@{}: Hybrid A* failed. "
                                    "Sending emergency stop.".format(timestamp))
                 output_wps = self._world.follow_waypoints(0)
         return output_wps
@@ -94,7 +94,7 @@ class HybridAStarPlanner(Planner):
                         len(self._world.waypoints.waypoints) - 1)
         if end_index < 0:
             # If no more waypoints left. Then our location is our end wp.
-            self._logger.debug("@{}: No more waypoints left")
+            print("@{}: No more waypoints left")
             end_wp = ego_transform
         else:
             end_wp = self._world.waypoints.waypoints[end_index]
