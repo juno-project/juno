@@ -1,216 +1,196 @@
-"""
-Author: Edward Fang
-Email: edward.fang@berkeley.edu
-"""
-import time
-from collections import deque
-
-import erdos
+from math import fabs
+from os import O_TRUNC
+import pickle
 
 from pylot.perception.messages import ObstaclesMessage
 from pylot.perception.tracking.obstacle_trajectory import ObstacleTrajectory
+from pylot.planning import rrt_star
 from pylot.planning.messages import WaypointsMessage
 from pylot.planning.utils import BehaviorPlannerState
 from pylot.planning.world import World
 from pylot.prediction.messages import PredictionMessage
 from pylot.prediction.obstacle_prediction import ObstaclePrediction
+from pylot.simulation.utils import map_from_opendrive
+from pylot.map.hd_map import HDMap
+from pylot.simulation.utils import get_map
 
 
-class PlanningOperator(erdos.Operator):
-    """Planning Operator.
+class PlanningState:
+    def __init__(self, cfg):
+        print("operator state initializing")
+        self.execution_mode = cfg['execution_mode']
+        self.planning_type = cfg['planning_type']
+        self.target_speed = cfg['target_speed']
 
-    If the operator is running in challenge mode, then it receives all
-    the waypoints from the scenario runner agent (on the global trajectory
-    stream). Otherwise, it computes waypoints using the HD Map.
+        world_params = {
+            'tracking_num_steps': cfg['tracking_num_steps'],
+            'static_obstacle_distance_threshold': cfg['static_obstacle_distance_threshold'],
+            'dynamic_obstacle_distance_threshold': cfg['dynamic_obstacle_distance_threshold'],
+            'num_waypoints_ahead': cfg['num_waypoints_ahead'],
+            'obstacle_filtering_distance': float(cfg['obstacle_filtering_distance']),
+            'obstacle_radius': float(cfg['obstacle_radius']),
+            'min_pid_steer_waypoint_distance': cfg['min_pid_steer_waypoint_distance'],
+            'traffic_light_min_distance': cfg['traffic_light_min_distance'],
+            'traffic_light_max_distance': cfg['traffic_light_max_distance'],
+            'traffic_light_max_angle': float(cfg['traffic_light_max_angle']),
+            'coast_factor': float(cfg['coast_factor']),
+            'stop_for_people': cfg['stop_for_people'],
+            'stop_for_vehicles': cfg['stop_for_vehicles'],
+            'stop_for_traffic_lights': cfg['stop_for_traffic_lights'],
+            'stop_at_uncontrolled_junctions': cfg['stop_at_uncontrolled_junctions'],
+            'person_angle_hit_zone': float(cfg['person_angle_hit_zone']),
+            'person_distance_hit_zone': cfg['person_distance_hit_zone'],
+            'person_angle_emergency_zone': float(cfg['person_angle_emergency_zone']),
+            'person_distance_emergency_zone': cfg['person_distance_emergency_zone']
+        }
 
-    Args:
-        pose_stream (:py:class:`erdos.ReadStream`): Stream on which pose
-            info is received.
-        prediction_stream (:py:class:`erdos.ReadStream`): Stream on which
-            trajectory predictions of dynamic obstacles is received.
-        static_obstacles_stream (:py:class:`erdos.ReadStream`): Stream on
-            which static obstacles (e.g., traffic lights) are received.
-        open_drive_stream (:py:class:`erdos.ReadStream`): Stream on which open
-            drive string representations are received. The operator can
-            construct HDMaps out of the open drive strings.
-        route_stream (:py:class:`erdos.ReadStream`): Stream on the planner
-            receives high-level waypoints to follow.
-        waypoints_stream (:py:class:`erdos.WriteStream`): Stream on which the
-            operator sends waypoints the ego vehicle must follow.
-        flags (absl.flags): Object to be used to access absl flags.
-    """
-    def __init__(self, pose_stream: erdos.ReadStream,
-                 prediction_stream: erdos.ReadStream,
-                 static_obstacles_stream: erdos.ReadStream,
-                 lanes_stream: erdos.ReadStream,
-                 route_stream: erdos.ReadStream,
-                 open_drive_stream: erdos.ReadStream,
-                 time_to_decision_stream: erdos.ReadStream,
-                 waypoints_stream: erdos.WriteStream, flags):
-        pose_stream.add_callback(self.on_pose_update)
-        prediction_stream.add_callback(self.on_prediction_update)
-        static_obstacles_stream.add_callback(self.on_static_obstacles_update)
-        lanes_stream.add_callback(self.on_lanes_update)
-        route_stream.add_callback(self.on_route)
-        open_drive_stream.add_callback(self.on_opendrive_map)
-        time_to_decision_stream.add_callback(self.on_time_to_decision)
-        erdos.add_watermark_callback([
-            pose_stream, prediction_stream, static_obstacles_stream,
-            lanes_stream, time_to_decision_stream, route_stream
-        ], [waypoints_stream], self.on_watermark)
-        self._logger = erdos.utils.setup_logging(self.config.name,
-                                                 self.config.log_file_name)
-        self._flags = flags
-        # We do not know yet the vehicle's location.
-        self._ego_transform = None
-        self._map = None
-        self._world = World(flags, self._logger)
-        if self._flags.planning_type == 'waypoint':
+        FOTparameters = {
+            'max_speed': cfg['max_speed'],
+            'max_accel': cfg['max_accel'],
+            'max_curvature': cfg['max_curvature'],
+            'max_road_width_l': cfg['max_road_width_l'],
+            'max_road_width_r': cfg['max_road_width_r'],
+            'd_road_w': cfg['d_road_w'],
+            'dt': cfg['dt'],
+            'maxt': cfg['maxt'],
+            'mint': cfg['mint'],
+            'd_t_s': cfg['d_t_s'],
+            'n_s_sample': cfg['n_s_sample'],
+            'obstacle_clearance_fot': cfg['obstacle_clearance_fot'],
+            'kd': cfg['kd'],
+            'kv': cfg['kv'],
+            'ka': cfg['ka'],
+            'kj': cfg['kj'],
+            'kt': cfg['kt'],
+            'ko': cfg['ko'],
+            'klat': cfg['klat'],
+            'klon': cfg['klon']
+        }
+
+        hybrid_parameters = {
+            "step_size": cfg['step_size_hybrid_astar'],
+            "max_iterations": cfg['max_iterations_hybrid_astar'],
+            "completion_threshold": cfg['completion_threshold'],
+            "angle_completion_threshold": cfg['angle_completion_threshold'],
+            "rad_step": cfg['rad_step'],
+            "rad_upper_range": cfg['rad_upper_range'],
+            "rad_lower_range": cfg['rad_lower_range'],
+            "obstacle_clearance": cfg['obstacle_clearance_hybrid_astar'],
+            "lane_width": cfg['lane_width_hybrid_astar'],
+            "radius": cfg['radius'],
+            "car_length": cfg['car_length'],
+            "car_width": cfg['car_width']
+        }
+
+        rrt_star_parameters = {
+            'step_size': cfg['step_size'],
+            'max_iterations': cfg['max_iterations'],
+            'end_dist_threshold': cfg['end_dist_threshold'],
+            'obstacle_clearance': cfg['obstacle_clearance'],
+            'lane_width': cfg['lane_width']
+        }
+        
+        self._world = World(world_params)
+        print("planning type: {}".format(self.planning_type))
+        if self.planning_type == 'waypoint':
             # Use the FOT planner for overtaking.
             from pylot.planning.frenet_optimal_trajectory.fot_planner \
                 import FOTPlanner
-            self._planner = FOTPlanner(self._world, self._flags, self._logger)
-        elif self._flags.planning_type == 'frenet_optimal_trajectory':
+            self._planner = FOTPlanner(self._world, FOTparameters)
+        elif self.planning_type == 'frenet_optimal_trajectory':
             from pylot.planning.frenet_optimal_trajectory.fot_planner \
                 import FOTPlanner
-            self._planner = FOTPlanner(self._world, self._flags, self._logger)
-        elif self._flags.planning_type == 'hybrid_astar':
+            self._planner = FOTPlanner(self._world, FOTparameters)
+        elif self.planning_type == 'hybrid_astar':
             from pylot.planning.hybrid_astar.hybrid_astar_planner \
                 import HybridAStarPlanner
-            self._planner = HybridAStarPlanner(self._world, self._flags,
-                                               self._logger)
-        elif self._flags.planning_type == 'rrt_star':
+            self._planner = HybridAStarPlanner(self._world, hybrid_parameters)
+        elif self.planning_type == 'rrt_star':
+            print("try to import")
             from pylot.planning.rrt_star.rrt_star_planner import RRTStarPlanner
-            self._planner = RRTStarPlanner(self._world, self._flags,
-                                           self._logger)
+            print("imported")
+            self._planner = RRTStarPlanner(self._world, rrt_star_parameters)
         else:
             raise ValueError('Unexpected planning type: {}'.format(
-                self._flags.planning_type))
+                self.planning_type))
         self._state = BehaviorPlannerState.FOLLOW_WAYPOINTS
-        self._pose_msgs = deque()
-        self._prediction_msgs = deque()
-        self._static_obstacles_msgs = deque()
-        self._lanes_msgs = deque()
-        self._ttd_msgs = deque()
 
-    @staticmethod
-    def connect(pose_stream: erdos.ReadStream,
-                prediction_stream: erdos.ReadStream,
-                static_obstacles_stream: erdos.ReadStream,
-                lanes_steam: erdos.ReadStream, route_stream: erdos.ReadStream,
-                open_drive_stream: erdos.ReadStream,
-                time_to_decision_stream: erdos.ReadStream):
-        waypoints_stream = erdos.WriteStream()
-        return [waypoints_stream]
+        self._map = HDMap(
+            get_map(cfg['simulator_host'], cfg['simulator_port'],
+                    cfg['simulator_timeout']))
+        print('Planner running in stand-alone mode')
 
-    def destroy(self):
-        self._logger.warn('destroying {}'.format(self.config.name))
 
-    def run(self):
-        # Run method is invoked after all operators finished initializing.
-        # Thus, we're sure the world is up-to-date here.
-        if self._flags.execution_mode == 'simulation':
-            from pylot.map.hd_map import HDMap
-            from pylot.simulation.utils import get_map
-            self._map = HDMap(
-                get_map(self._flags.simulator_host, self._flags.simulator_port,
-                        self._flags.simulator_timeout),
-                self.config.log_file_name)
-            self._logger.info('Planner running in stand-alone mode')
+class PlanningOperator:
+    def initialize(self, configuration):
+        print("operator initializing")
+        return PlanningState(configuration)
 
-    def on_pose_update(self, msg: erdos.Message):
-        """Invoked whenever a message is received on the pose stream.
+    def finalize(self, state):
+        print("finalize")
+        return None
 
-        Args:
-            msg (:py:class:`~erdos.message.Message`): Message that contains
-                info about the ego vehicle.
-        """
-        self._logger.debug('@{}: received pose message'.format(msg.timestamp))
-        self._pose_msgs.append(msg)
-        self._ego_transform = msg.data.transform
+    def input_rule(self, _ctx, state, tokens):
+        token = tokens.get("PlanningMsg")
+        msg = pickle.loads(bytes(token.get_data()))
+        print("msg from token: {}".format(msg))
+        if msg == None: 
+            token.set_action_drop()
+            return False
+        state.msg = msg
+        return True
 
-    @erdos.profile_method()
-    def on_prediction_update(self, msg: erdos.Message):
-        self._logger.debug('@{}: received prediction message'.format(
-            msg.timestamp))
-        self._prediction_msgs.append(msg)
+    def output_rule(self, _ctx, _state, outputs, _deadline_miss):
+        print("output")
+        return outputs
 
-    def on_static_obstacles_update(self, msg: erdos.Message):
-        self._logger.debug('@{}: received static obstacles update'.format(
-            msg.timestamp))
-        self._static_obstacles_msgs.append(msg)
+    def run(self, _ctx, _state, inputs):
+        msg = _state.msg
+        timestamp = msg[0]
+        lane_msg = msg[1]
+        linear_prediction_msg = msg[2]
+        open_drive_msg = msg[3]
+        trajectory_msg = msg[4]
+        vehicle_transform = msg[5]
+        traffic_light_msg = TrafficLightsMessage(timestamp, [])
+        print('@{}: received watermark'.format(timestamp))
 
-    def on_lanes_update(self, msg: erdos.Message):
-        self._logger.debug('@{}: received lanes update'.format(msg.timestamp))
-        self._lanes_msgs.append(msg)
-
-    def on_route(self, msg: erdos.Message):
-        """Invoked whenever a message is received on the trajectory stream.
-
-        Args:
-            msg (:py:class:`~erdos.message.Message`): Message that contains
-                a list of waypoints to the goal location.
-        """
-        if msg.agent_state:
-            self._logger.debug('@{}: updating planner state to {}'.format(
-                msg.timestamp, msg.agent_state))
-            self._state = msg.agent_state
-        if msg.waypoints:
-            self._logger.debug('@{}: route has {} waypoints'.format(
-                msg.timestamp, len(msg.waypoints.waypoints)))
+        if trajectory_msg.agent_state:
+            print('@{}: updating planner state to {}'.format(
+                timestamp, trajectory_msg.agent_state))
+            _state._state = trajectory_msg.agent_state
+        if trajectory_msg.waypoints:
+            print('@{}: route has {} waypoints'.format(
+                timestamp, len(trajectory_msg.waypoints.waypoints)))
             # The last waypoint is the goal location.
-            self._world.update_waypoints(msg.waypoints.waypoints[-1].location,
-                                         msg.waypoints)
+            _state._world.update_waypoints(trajectory_msg.waypoints.waypoints[-1].location,
+                                           trajectory_msg.waypoints)
 
-    def on_opendrive_map(self, msg: erdos.Message):
-        """Invoked whenever a message is received on the open drive stream.
+        _state._map = map_from_opendrive(open_drive_msg.data)
 
-        Args:
-            msg (:py:class:`~erdos.message.Message`): Message that contains
-                the open drive string.
-        """
-        self._logger.debug('@{}: received open drive message'.format(
-            msg.timestamp))
-        from pylot.simulation.utils import map_from_opendrive
-        self._map = map_from_opendrive(msg.data)
-
-    @erdos.profile_method()
-    def on_time_to_decision(self, msg: erdos.Message):
-        self._logger.debug('@{}: {} received ttd update {}'.format(
-            msg.timestamp, self.config.name, msg))
-        self._ttd_msgs.append(msg)
-
-    @erdos.profile_method()
-    def on_watermark(self, timestamp: erdos.Timestamp,
-                     waypoints_stream: erdos.WriteStream):
-        self._logger.debug('@{}: received watermark'.format(timestamp))
-        if timestamp.is_top:
-            return
-        self.update_world(timestamp)
-        ttd_msg = self._ttd_msgs.popleft()
+        self.update_world(self, timestamp, vehicle_transform,
+                          linear_prediction_msg, lane_msg, traffic_light_msg, _state._world, _state._map)
         # Total ttd - time spent up to now
-        ttd = ttd_msg.data - (time.time() - self._world.pose.localization_time)
-        self._logger.debug('@{}: adjusting ttd from {} to {}'.format(
-            timestamp, ttd_msg.data, ttd))
+        ttd = 0
         # if self._state == BehaviorPlannerState.OVERTAKE:
         #     # Ignore traffic lights and obstacle.
         #     output_wps = self._planner.run(timestamp, ttd)
         # else:
         (speed_factor, _, _, speed_factor_tl,
-         speed_factor_stop) = self._world.stop_for_agents(timestamp)
-        if self._flags.planning_type == 'waypoint':
-            target_speed = speed_factor * self._flags.target_speed
-            self._logger.debug(
+         speed_factor_stop) = _state._world.stop_for_agents(timestamp)
+        if _state.planning_type == 'waypoint':
+            target_speed = speed_factor * _state.target_speed
+            print(
                 '@{}: speed factor: {}, target speed: {}'.format(
                     timestamp, speed_factor, target_speed))
-            output_wps = self._world.follow_waypoints(target_speed)
+            output_wps = _state._world.follow_waypoints(target_speed)
         else:
-            output_wps = self._planner.run(timestamp, ttd)
+            output_wps = _state._planner.run(timestamp, ttd)
             speed_factor = min(speed_factor_stop, speed_factor_tl)
-            self._logger.debug('@{}: speed factor: {}'.format(
+            print('@{}: speed factor: {}'.format(
                 timestamp, speed_factor))
             output_wps.apply_speed_factor(speed_factor)
-        waypoints_stream.send(WaypointsMessage(timestamp, output_wps))
+        return {'WaypointsMsg': pickle.dumps(WaypointsMessage(timestamp, output_wps))}
 
     def get_predictions(self, prediction_msg, ego_transform):
         """Extracts obstacle predictions out of the message.
@@ -222,7 +202,7 @@ class PlanningOperator(erdos.Operator):
         predictions = []
         if isinstance(prediction_msg, ObstaclesMessage):
             # Transform the obstacle into a prediction.
-            self._logger.debug(
+            print(
                 'Planner received obstacles instead of predictions.')
             predictions = []
             for obstacle in prediction_msg.obstacles:
@@ -238,21 +218,39 @@ class PlanningOperator(erdos.Operator):
                 type(prediction_msg)))
         return predictions
 
-    def update_world(self, timestamp: erdos.Timestamp):
-        pose_msg = self._pose_msgs.popleft()
-        ego_transform = pose_msg.data.transform
-        prediction_msg = self._prediction_msgs.popleft()
-        predictions = self.get_predictions(prediction_msg, ego_transform)
-        static_obstacles_msg = self._static_obstacles_msgs.popleft()
-        if len(self._lanes_msgs) > 0:
-            lanes = self._lanes_msgs.popleft().data
+    def update_world(self, timestamp, vehicle_transform, linear_prediction_msg, lane_msg, traffic_light_msg, world, map):
+        ego_transform = vehicle_transform
+        prediction_msg = linear_prediction_msg
+        predictions = self.get_predictions(self, prediction_msg, ego_transform)
+        static_obstacles_msg = traffic_light_msg
+        if lane_msg.data != None:
+            lanes = lane_msg.data
         else:
             lanes = None
 
         # Update the representation of the world.
-        self._world.update(timestamp,
-                           pose_msg.data,
+        world.update(timestamp,
+                           ego_transform,
                            predictions,
                            static_obstacles_msg.obstacles,
-                           hd_map=self._map,
+                           hd_map=map,
                            lanes=lanes)
+
+
+class TrafficLightsMessage():
+    def __init__(self, timestamp, traffic_lights):
+        self.obstacles = traffic_lights
+        self.timestamp = timestamp
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return 'TrafficLightsMessage(timestamp: {}, ' \
+            'traffic lights: {})'.format(
+                self.timestamp, self.obstacles)
+
+
+def register():
+    print("register operator")
+    return PlanningOperator
