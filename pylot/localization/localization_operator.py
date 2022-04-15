@@ -1,12 +1,11 @@
 """This module implements EKF localization using GNSS and IMU."""
 import pickle
-import time
 from collections import deque
 import numpy as np
 from pylot.localization.messages import PoseMessage
 from pylot.utils import Location, Pose, Quaternion, Rotation, Transform, \
     Vector3D
-
+from zenoh_flow import Inputs, Operator, Outputs
 
 class LocalizationState:
     def  __init__(self, cfg):
@@ -111,22 +110,52 @@ class LocalizationState:
         return np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]],
                         dtype=np.float64)
 
-class LocalizationOperator():
+class LocalizationOperator(Operator):
     def initialize(self, configuration):
         return LocalizationState(configuration)
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        token = tokens.get('localizationMsg').get_data()
-        msg = pickle.loads(bytes(token))
+        imu_token = tokens.get("carlaImuDriverMsg")
+        gnss_token = tokens.get("carlaGnssDriverMsg")
+        carla_token = tokens.get("carlaOperatorMsg")
 
-        pose_msg = msg['pose']
-        gnss_msg = msg['gnss']
-        imu_msg = msg['imu']
+        # print("-------------------------------------------------------------")
+        # print(" imu_token.is_pending() : {}".format(imu_token.is_pending()))
+        # print(" gnss_token.is_pending() : {}".format(gnss_token.is_pending()))
+        # print(" carla_token.is_pending() : {}".format(carla_token.is_pending()))
+        # print("-------------------------------------------------------------")
+        if imu_token.is_pending():
+            imu_token.set_action_keep()
+            return False
 
-        state.buffer_msg(pose_msg, msg_type="pose", queue=state._ground_pose_updates)
-        state.buffer_msg(gnss_msg, msg_type="GNSS", queue=state._gnss_updates)
-        state.buffer_msg(imu_msg, msg_type="IMU", queue=state._imu_updates)
+        if gnss_token.is_pending():
+            gnss_token.set_action_keep()
+            return False
+
+        if carla_token.is_pending():
+            carla_token.set_action_keep()
+            return False
+
+        if not imu_token.is_pending() and not gnss_token.is_pending() and not gnss_token.is_pending():
+            imu_msg = pickle.loads(bytes(imu_token.get_data()))
+            gnss_msg = pickle.loads(bytes(gnss_token.get_data()))
+            carla_msg = pickle.loads(bytes(carla_token.get_data()))
+
+            pose_stream = carla_msg['pose_stream']
+            gnss_stream = gnss_msg['gnss_stream']
+            imu_stream = imu_msg['imu_stream']
+
+            if pose_stream == None or gnss_stream == None or imu_stream == None:
+                imu_token.set_action_drop()
+                gnss_token.set_action_drop()
+                carla_token.set_action_drop()
+                return False
+
+            state.timestamp = carla_msg['timestamp']
+            state.pose_stream = pose_stream
+            state.gnss_stream = gnss_stream
+            state.imu_stream = imu_stream
 
         return True
 
@@ -137,23 +166,12 @@ class LocalizationOperator():
         return None
 
     def run(self, _ctx, _state, inputs):
-        msg = inputs.get("localizationMsg").data
-        # print("@: inputs:  {}".format(msg))
-        msg = pickle.loads(msg)
-
         # # Retrieve the messages for this timestamp
-        # pose_msg = msg['pose']
-        # gnss_msg = msg['gnss']
-        # imu_msg = msg['imu']
-        timestamp = msg['timestamp']
-
+        timestamp = _state.timestamp
         print("@{}: received watermark.".format(timestamp))
-        # if timestamp.is_top:
-        #     self._pose_stream.send(erdos.WatermarkMessage(timestamp))
-        #     return
-        pose_msg = _state.get_message(_state._ground_pose_updates, msg['pose'].timestamp,"pose")
-        gnss_msg = _state.get_message(_state._gnss_updates, msg['gnss'].timestamp, "GNSS")
-        imu_msg = _state.get_message(_state._imu_updates, msg['imu'].timestamp, "IMU")
+        pose_msg = _state.pose_stream
+        gnss_msg = _state.gnss_stream
+        imu_msg = _state.imu_stream
 
         if _state._last_pose_estimate is None or \
                 (abs(imu_msg.acceleration.y) > 100 and not _state._is_started):
@@ -162,14 +180,14 @@ class LocalizationOperator():
             # save the estimates.
             if pose_msg:
                 _state._last_pose_estimate = pose_msg.data
-                _state._last_timestamp = time.time()
+                _state._last_timestamp = _state.timestamp
             else:
                 raise NotImplementedError("Need pose message to initialize the estimates.")
         else:
             _state._is_started = True
 
             # Initialize the delta_t
-            current_ts = time.time()
+            current_ts = _state.timestamp
             delta_t = (current_ts - _state._last_timestamp) / 1000.0
 
             # Estimate the rotation.
@@ -207,6 +225,8 @@ class LocalizationOperator():
                     (3, 1)))) * delta_t
 
             # Fix estimates using GNSS
+
+            print("run-------------gnss_stream : {}".format(gnss_msg))
             gnss_reading = Location.from_gps(
                 gnss_msg.latitude, gnss_msg.longitude,
                 gnss_msg.altitude).as_numpy_array()
@@ -233,7 +253,7 @@ class LocalizationOperator():
             _state._last_timestamp = current_ts
             _state._last_pose_estimate = current_pose
 
-        return {'PoseMessage': pickle.dumps(PoseMessage(_state._last_timestamp, _state._last_pose_estimate))}
+        return {'localizationMsg': pickle.dumps(PoseMessage(_state._last_timestamp, _state._last_pose_estimate))}
 
 
 def register():

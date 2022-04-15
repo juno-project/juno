@@ -30,14 +30,18 @@ operators:
 #    outputs:
 #       - id: TrafficLightsMsg
 #         type: usize
-#   - id: LocalizationOperator
-#     uri: file://./pylot/localization/localization_operator.py
-#     inputs:
-#       - id: localizationMsg
-#         type: usize
-#     outputs:
-#       - id: PoseMessage
-#         type: usize
+  - id: LocalizationOperator
+    uri: file://./pylot/localization/localization_operator.py
+    inputs:
+       - id: carlaOperatorMsg
+         type: usize
+       - id: carlaImuDriverMsg
+         type: usize
+       - id: carlaGnssDriverMsg
+         type: usize
+    outputs:
+       - id: localizationMsg
+         type: usize
 #  - id: ObstacleLocationFinderOperator
 #    uri: file://./pylot/perception/detection/obstacle_location_finder_operator.py
 #    inputs:
@@ -91,20 +95,20 @@ operators:
 #      - id: ControlMsg
 #        type: usize
 #
-  - id: LanenetDetectionOperator
-    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
-    configuration:
-      out_path: ./out_data/
-      log_file_name: pylot.log
-      lane_detection_gpu_index: 0
-      lane_detection_gpu_memory_fraction: 3
-      lanenet_detection_model_path:  /dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
-    inputs:
-      - id: carlaCameraDriverMsg
-        type: usize
-    outputs:
-      - id: LanesMessage
-        type: usize
+#  - id: LanenetDetectionOperator
+#    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
+#    configuration:
+#      out_path: ./out_data/
+#      log_file_name: pylot.log
+#      lane_detection_gpu_index: 0
+#      lane_detection_gpu_memory_fraction: 3
+#      lanenet_detection_model_path:  /dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
+#    inputs:
+#      - id: carlaCameraDriverMsg
+#        type: usize
+#    outputs:
+#      - id: LanesMessage
+#        type: usize
 #
 #  - id: behaviorPlanningOperator
 #   uri: file://./pylot/planning/behavior_planning_operator.py
@@ -164,28 +168,28 @@ operators:
      - id: carlaOperatorMsg
        type: usize
 
-  - id: carlaCameraDriverOperator
-    uri: file://./pylot/drivers/carla_camera_driver_operator.py
-    configuration:
-      log_file_name: 'pylot.log'
-      camera_name: 'center_camera_operator'
-      camera_image_width: 1920
-      camera_image_height: 1080
-      camera_fov: 90.0
-      visualize_depth_camera: False
-      name: "center_camera_operator"
-      simulator_host: 'localhost'
-      simulator_port: 2000
-      simulator_timeout: 10
-      simulator_camera_frequency: -1
-      simulator_mode: 'synchronous'
-      simulator_fps: 2
-    inputs:
-     - id: carlaOperatorMsg
-       type: usize
-    outputs:
-     - id: carlaCameraDriverMsg
-       type: usize
+#  - id: carlaCameraDriverOperator
+#    uri: file://./pylot/drivers/carla_camera_driver_operator.py
+#    configuration:
+#      log_file_name: 'pylot.log'
+#      camera_name: 'center_camera_operator'
+#      camera_image_width: 1920
+#      camera_image_height: 1080
+#      camera_fov: 90.0
+#      visualize_depth_camera: False
+#      name: "center_camera_operator"
+#      simulator_host: 'localhost'
+#      simulator_port: 2000
+#      simulator_timeout: 10
+#      simulator_camera_frequency: -1
+#      simulator_mode: 'synchronous'
+#      simulator_fps: 2
+#    inputs:
+#     - id: carlaOperatorMsg
+#       type: usize
+#    outputs:
+#     - id: carlaCameraDriverMsg
+#       type: usize
 
 #  - id: carlaLidarDriverOperator
 #    uri: file://./pylot/drivers/carla_lidar_driver_operator.py
@@ -211,53 +215,53 @@ operators:
 #     - id: carlaLidarDriverMsg
 #       type: usize
 
-#  - id: carlaImuDriverOperator
-#    uri: file://./pylot/drivers/carla_imu_driver_operator.py
-#    configuration:
-#      log_file_name: 'pylot.log'
-#      name: "center_camera_operator"
-#      simulator_host: 'localhost'
-#      simulator_port: 2000
-#      simulator_timeout: 10
-#      simulator_mode: 'synchronous'
-#      simulator_fps: 20
-#      accel_noise_stddev_x: 0.0
-#      accel_noise_stddev_y: 0.0
-#      accel_noise_stddev_z: 0.0
-#      gyro_noise_stddev_x: 0.0
-#      gyro_noise_stddev_y: 0.0
-#      gyro_noise_stddev_z: 0.0
-#      simulator_imu_frequency: 1
-#    inputs:
-#     - id: carlaOperatorMsg
-#       type: usize
-#    outputs:
-#     - id: carlaImuDriverMsg
-#       type: usize
+  - id: carlaImuDriverOperator
+    uri: file://./pylot/drivers/carla_imu_driver_operator.py
+    configuration:
+      log_file_name: 'pylot.log'
+      name: "center_camera_operator"
+      simulator_host: 'localhost'
+      simulator_port: 2000
+      simulator_timeout: 10
+      simulator_mode: 'synchronous'
+      simulator_fps: 20
+      accel_noise_stddev_x: 0.0
+      accel_noise_stddev_y: 0.0
+      accel_noise_stddev_z: 0.0
+      gyro_noise_stddev_x: 0.0
+      gyro_noise_stddev_y: 0.0
+      gyro_noise_stddev_z: 0.0
+      simulator_imu_frequency: 1
+    inputs:
+     - id: carlaOperatorMsg
+       type: usize
+    outputs:
+     - id: carlaImuDriverMsg
+       type: usize
 
-#  - id: carlaGnssDriverOperator
-#    uri: file://./pylot/drivers/carla_gnss_driver_operator.py
-#    configuration:
-#      log_file_name: 'pylot.log'
-#      name: "center_camera_operator"
-#      simulator_host: 'localhost'
-#      simulator_port: 2000
-#      simulator_timeout: 10
-#      simulator_mode: 'synchronous'
-#      simulator_fps: 20
-#      gnss_noise_stddev_alt: 0.0
-#      gnss_noise_stddev_lat: 0.0
-#      gnss_noise_stddev_lon: 0.0
-#      gnss_bias_alt: 0.0
-#      gnss_bias_lat: 0.0
-#      gnss_bias_lon: 0.0
-#      simulator_gnss_frequency: 10
-#    inputs:
-#     - id: carlaOperatorMsg
-#       type: usize
-#    outputs:
-#     - id: carlaGnssDriverMsg
-#       type: usize
+  - id: carlaGnssDriverOperator
+    uri: file://./pylot/drivers/carla_gnss_driver_operator.py
+    configuration:
+      log_file_name: 'pylot.log'
+      name: "center_camera_operator"
+      simulator_host: 'localhost'
+      simulator_port: 2000
+      simulator_timeout: 10
+      simulator_mode: 'synchronous'
+      simulator_fps: 20
+      gnss_noise_stddev_alt: 0.0
+      gnss_noise_stddev_lat: 0.0
+      gnss_noise_stddev_lon: 0.0
+      gnss_bias_alt: 0.0
+      gnss_bias_lat: 0.0
+      gnss_bias_lon: 0.0
+      simulator_gnss_frequency: 10
+    inputs:
+     - id: carlaOperatorMsg
+       type: usize
+    outputs:
+     - id: carlaGnssDriverMsg
+       type: usize
 
 sources:
 #   - id : DetectionSrc
@@ -371,11 +375,11 @@ sinks:
 #    input:
 #       id: TrafficLightsMsg
 #       type: usize
-#   - id : LocalizationSink
-#     uri: file://./sinks/localization_sink.py
-#     input:
-#         id: PoseMessage
-#         type: usize
+  - id : LocalizationSink
+    uri: file://./sinks/localization_sink.py
+    input:
+       id: localizationMsg
+       type: usize
 #  - id : ObstacleLocationFinderSink
 #    uri: file://./sinks/obstacle_location_finder_sink.py
 #    input:
@@ -396,11 +400,11 @@ sinks:
 #    input:
 #        id: ControlMsg
 #        type: usize
-  - id: LanenetDetectionSink
-    uri: file://./sinks/lanenet_detection_sink.py
-    input:
-        id: LanesMessage
-        type: usize
+#  - id: LanenetDetectionSink
+#    uri: file://./sinks/lanenet_detection_sink.py
+#    input:
+#        id: LanesMessage
+#        type: usize
 #  - id: behaviorPlanningSink
 #    uri: file://./sinks/behavior_planning_sink.py
 #    input:
@@ -711,6 +715,34 @@ links:
 #    input : TrafficLightsMsg
 
 
+#- from:
+#    node : carlaSrc
+#    output : carlaMsg
+#  to:
+#    node : carlaOperator
+#    input : carlaMsg
+#- from:
+#    node : carlaOperator
+#    output : carlaOperatorMsg
+#  to:
+#    node : carlaCameraDriverOperator
+#    input : carlaOperatorMsg
+#- from:
+#    node : carlaCameraDriverOperator
+#    output : carlaCameraDriverMsg
+#  to:
+#    node : LanenetDetectionOperator
+#    input : carlaCameraDriverMsg
+#- from:
+#    node : LanenetDetectionOperator
+#    output : LanesMessage
+#  to:
+#    node : LanenetDetectionSink
+#    input : LanesMessage
+
+
+
+
 - from:
     node : carlaSrc
     output : carlaMsg
@@ -721,17 +753,50 @@ links:
     node : carlaOperator
     output : carlaOperatorMsg
   to:
-    node : carlaCameraDriverOperator
+    node : carlaImuDriverOperator
     input : carlaOperatorMsg
 - from:
-    node : carlaCameraDriverOperator
-    output : carlaCameraDriverMsg
+    node : carlaImuDriverOperator
+    output : carlaImuDriverMsg
   to:
-    node : LanenetDetectionOperator
-    input : carlaCameraDriverMsg
+    node : LocalizationOperator
+    input : carlaImuDriverMsg
 - from:
-    node : LanenetDetectionOperator
-    output : LanesMessage
+    node : LocalizationOperator
+    output : localizationMsg
   to:
-    node : LanenetDetectionSink
-    input : LanesMessage
+    node : LocalizationSink
+    input : localizationMsg
+
+#- from:
+#    node : carlaSrc
+#    output : carlaMsg
+#  to:
+#    node : carlaOperator
+#    input : carlaMsg
+- from:
+    node : carlaOperator
+    output : carlaOperatorMsg
+  to:
+    node : carlaGnssDriverOperator
+    input : carlaOperatorMsg
+- from:
+    node : carlaGnssDriverOperator
+    output : carlaGnssDriverMsg
+  to:
+    node : LocalizationOperator
+    input : carlaGnssDriverMsg
+
+
+#- from:
+#    node : carlaSrc
+#    output : carlaMsg
+#  to:
+#    node : carlaOperator
+#    input : carlaMsg
+- from:
+    node : carlaOperator
+    output : carlaOperatorMsg
+  to:
+    node : LocalizationOperator
+    input : carlaOperatorMsg

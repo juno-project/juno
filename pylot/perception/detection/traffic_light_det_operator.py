@@ -102,7 +102,6 @@ class TrafficLightDetOperator(Operator):
         state.camera_stream.frame.save(state.camera_stream.timestamp, out_path,
                         'tl-detector-{}'.format('TrafficLightDetOperator_input'))
 
-        print("TrafficLightDetOperator state.camera_stream : {}".format(state.camera_stream))
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):

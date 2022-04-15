@@ -183,8 +183,7 @@ class CarlaState:
             # too. Send the Pose message and continue after the control message
             # is received.
             self._update_next_control_pseudo_asynchronous_ticks(timestamp)
-            self._send_hero_vehicle_data(self.pose_stream_for_control,
-                                          timestamp)
+            self.pose_stream_for_control = self._send_hero_vehicle_data(timestamp)
             self._update_spectactor_pose()
         else:
             # No pose message was supposed to be sent for this timestamp, we
@@ -221,7 +220,7 @@ class CarlaState:
                 if self.cfg["simulator_mode"] == 'pseudo-asynchronous':
                     self._update_next_localization_pseudo_async_ticks(
                         game_time)
-                self._send_hero_vehicle_data(self.pose_stream, timestamp)
+                self.pose_stream = self._send_hero_vehicle_data(timestamp)
                 self._send_ground_actors_data(timestamp)
                 self._update_spectactor_pose()
 
@@ -231,8 +230,7 @@ class CarlaState:
                     or game_time == self._next_control_sensor_reading):
                 self._update_next_control_pseudo_asynchronous_ticks(
                     game_time)
-                self._send_hero_vehicle_data(self.pose_stream_for_control,
-                                              timestamp)
+                self.pose_stream_for_control = self._send_hero_vehicle_data(timestamp)
                 self._update_spectactor_pose()
 
     def _update_next_localization_pseudo_async_ticks(self, game_time: int):
@@ -310,7 +308,7 @@ class CarlaState:
         self._client.apply_batch_sync(
             [command.ApplyVehicleControl(self._ego_vehicle.id, vec_control)])
 
-    def _send_hero_vehicle_data(self, msg, timestamp):
+    def _send_hero_vehicle_data(self, timestamp):
         vec_transform = pylot.utils.Transform.from_simulator_transform(
             self._ego_vehicle.get_transform())
         velocity_vector = pylot.utils.Vector3D.from_simulator_vector(
@@ -319,6 +317,7 @@ class CarlaState:
         pose = pylot.utils.Pose(vec_transform, forward_speed, velocity_vector,
                                 timestamp)
         msg = Message(timestamp, pose)
+        return msg
         # stream.send(erdos.Message(timestamp, pose))
         # stream.send(erdos.WatermarkMessage(timestamp))
 
