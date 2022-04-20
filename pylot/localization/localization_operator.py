@@ -2,6 +2,8 @@
 import pickle
 from collections import deque
 import numpy as np
+
+import pylot
 from pylot.localization.messages import PoseMessage
 from pylot.utils import Location, Pose, Quaternion, Rotation, Transform, \
     Vector3D
@@ -18,6 +20,7 @@ class LocalizationState:
 
         # Initialize a logger.
         self.cfg = cfg
+        self._logger = pylot.utils.get_logger(cfg["log_file_name"])
 
         # Gravity vector.
         self._g = np.array([0, 0, -9.81])
@@ -226,7 +229,7 @@ class LocalizationOperator(Operator):
 
             # Fix estimates using GNSS
 
-            print("run-------------gnss_stream : {}".format(gnss_msg))
+            print("gnss_stream----- latitude:{},longitude:{}, altitude:{}".format(gnss_msg.latitude, gnss_msg.longitude, gnss_msg.altitude))
             gnss_reading = Location.from_gps(
                 gnss_msg.latitude, gnss_msg.longitude,
                 gnss_msg.altitude).as_numpy_array()
@@ -246,7 +249,7 @@ class LocalizationOperator(Operator):
                 velocity_vector=Vector3D(*velocity_estimate),
                 localization_time=current_ts,
             )
-            print("@{}: Predicted pose: {}".format(
+            _state._logger.info("@{}: Predicted pose: {}".format(
                 timestamp, current_pose))
 
             # Set the estimates for the next iteration.

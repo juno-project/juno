@@ -30,18 +30,20 @@ operators:
 #    outputs:
 #       - id: TrafficLightsMsg
 #         type: usize
-#  - id: LocalizationOperator
-#    uri: file://./pylot/localization/localization_operator.py
-#    inputs:
-#       - id: carlaOperatorMsg
-#         type: usize
-#       - id: carlaImuDriverMsg
-#         type: usize
-#       - id: carlaGnssDriverMsg
-#         type: usize
-#    outputs:
-#       - id: localizationMsg
-#         type: usize
+  - id: LocalizationOperator
+    uri: file://./pylot/localization/localization_operator.py
+    configuration:
+      log_file_name: pylot.log
+    inputs:
+       - id: carlaOperatorMsg
+         type: usize
+       - id: carlaImuDriverMsg
+         type: usize
+       - id: carlaGnssDriverMsg
+         type: usize
+    outputs:
+       - id: localizationMsg
+         type: usize
 #  - id: ObstacleLocationFinderOperator
 #    uri: file://./pylot/perception/detection/obstacle_location_finder_operator.py
 #    inputs:
@@ -137,36 +139,36 @@ operators:
 #     - id: linearPredictorMsg
 #       type: usize
 
-#  - id: carlaOperator
-#    uri: file://./pylot/simulation/carla_operator.py
-#    configuration:
-#       name: 'simulator_bridge_operator'
-#       log_file_name: 'pylot.log'
-#       csv_log_file_name: 'pylot.csv'
-#       simulator_host: 'localhost'
-#       simulator_port: 2000
-#       simulator_timeout: 10
-#       #boolean  会识别成字符串False
-#       scenario_runner: False
-#       control: 'simulator_auto_pilot'
-#       carla_traffic_manager_port: 8000
-#       simulator_mode: 'synchronous'
-#       simulator_control_frequency: -1
-#       simulator_localization_frequency: -1
-#       simulator_fps: 20
-#       simulator_town: 1
-#       simulator_weather: 'ClearNoon'
-#       simulator_spawn_point_index: -1
-#       simulator_num_people: 250
-#       simulator_num_vehicles: 20
-#       simulator_vehicle_moi: 1
-#       simulator_vehicle_mass: 100
-#    inputs:
-#     - id: carlaMsg
-#       type: usize
-#    outputs:
-#     - id: carlaOperatorMsg
-#       type: usize
+  - id: carlaOperator
+    uri: file://./pylot/simulation/carla_operator.py
+    configuration:
+       name: 'simulator_bridge_operator'
+       log_file_name: 'pylot.log'
+       csv_log_file_name: 'pylot.csv'
+       simulator_host: 'localhost'
+       simulator_port: 2000
+       simulator_timeout: 10
+       #boolean  会识别成字符串False
+       scenario_runner: False
+       control: 'simulator_auto_pilot'
+       carla_traffic_manager_port: 8000
+       simulator_mode: 'synchronous'
+       simulator_control_frequency: -1
+       simulator_localization_frequency: -1
+       simulator_fps: 20
+       simulator_town: 1
+       simulator_weather: 'ClearNoon'
+       simulator_spawn_point_index: -1
+       simulator_num_people: 250
+       simulator_num_vehicles: 20
+       simulator_vehicle_moi: 1
+       simulator_vehicle_mass: 100
+    inputs:
+     - id: carlaMsg
+       type: usize
+    outputs:
+     - id: carlaOperatorMsg
+       type: usize
 
 #  - id: carlaCameraDriverOperator
 #    uri: file://./pylot/drivers/carla_camera_driver_operator.py
@@ -215,125 +217,125 @@ operators:
 #     - id: carlaLidarDriverMsg
 #       type: usize
 
-#  - id: carlaImuDriverOperator
-#    uri: file://./pylot/drivers/carla_imu_driver_operator.py
-#    configuration:
-#      log_file_name: 'pylot.log'
-#      name: "center_camera_operator"
-#      simulator_host: 'localhost'
-#      simulator_port: 2000
-#      simulator_timeout: 10
-#      simulator_mode: 'synchronous'
-#      simulator_fps: 20
-#      accel_noise_stddev_x: 0.0
-#      accel_noise_stddev_y: 0.0
-#      accel_noise_stddev_z: 0.0
-#      gyro_noise_stddev_x: 0.0
-#      gyro_noise_stddev_y: 0.0
-#      gyro_noise_stddev_z: 0.0
-#      simulator_imu_frequency: 1
-#    inputs:
-#     - id: carlaOperatorMsg
-#       type: usize
-#    outputs:
-#     - id: carlaImuDriverMsg
-#       type: usize
-#
-#  - id: carlaGnssDriverOperator
-#    uri: file://./pylot/drivers/carla_gnss_driver_operator.py
-#    configuration:
-#      log_file_name: 'pylot.log'
-#      name: "center_camera_operator"
-#      simulator_host: 'localhost'
-#      simulator_port: 2000
-#      simulator_timeout: 10
-#      simulator_mode: 'synchronous'
-#      simulator_fps: 20
-#      gnss_noise_stddev_alt: 0.0
-#      gnss_noise_stddev_lat: 0.0
-#      gnss_noise_stddev_lon: 0.0
-#      gnss_bias_alt: 0.0
-#      gnss_bias_lat: 0.0
-#      gnss_bias_lon: 0.0
-#      simulator_gnss_frequency: 10
-#    inputs:
-#     - id: carlaOperatorMsg
-#       type: usize
-#    outputs:
-#     - id: carlaGnssDriverMsg
-#       type: usize
-
-  - id: PlanningOperator
-    uri: file://./pylot/planning/planning_operator.py
+  - id: carlaImuDriverOperator
+    uri: file://./pylot/drivers/carla_imu_driver_operator.py
     configuration:
-      execution_mode: simulation
-      planning_type: waypoint
-      tracking_num_steps: 10
-      static_obstacle_distance_threshold: 70
-      dynamic_obstacle_distance_threshold: 50
-      num_waypoints_ahead: 60
-      obstacle_filtering_distance: '1.0'
-      obstacle_radius: '1.0'
-      min_pid_steer_waypoint_distance: 5
-      traffic_light_min_distance: 5
-      traffic_light_max_distance: 20
-      traffic_light_max_angle: '0.6'
-      coast_factor: '1.75'
-      stop_for_people: True
-      stop_for_vehicles: True
-      stop_for_traffic_lights: True
-      stop_at_uncontrolled_junctions: False
-      person_angle_hit_zone: '0.15'
-      person_distance_hit_zone: 35
-      person_angle_emergency_zone: '0.5'
-      person_distance_emergency_zone: 15
-      max_speed: 35
-      max_accel: 6
-      max_curvature: 1
-      max_road_width_l: 5
-      max_road_width_r: 1
-      d_road_w: '0.25'
-      dt: '0.25'
-      maxt: 8
-      mint: 2
-      d_t_s: '0.25'
-      n_s_sample: 2
-      obstacle_clearance_fot: '0.5'
-      kd: 1
-      kv: '0.1'
-      ka: '0.1'
-      kj: '0.01'
-      kt: '0.01'
-      ko: '0.1'
-      klat: 1
-      klon: 1
-      step_size_hybrid_astar: 3
-      max_iterations_hybrid_astar: 2000
-      completion_threshold: 1
-      angle_completion_threshold: 100
-      rad_step: '0.5'
-      rad_upper_range: 4
-      rad_lower_range: 4
-      obstacle_clearance_hybrid_astar: 1
-      lane_width_hybrid_astar: 6
-      radius: 6
-      car_length: '4.8'
-      car_width: '1.8'
-      step_size: '0.5'
-      max_iterations: 2000
-      end_dist_threshold: 2
-      obstacle_clearance: '0.5'
-      lane_width: 3
-      simulator_host: localhost
+      log_file_name: 'pylot.log'
+      name: "center_camera_operator"
+      simulator_host: 'localhost'
       simulator_port: 2000
       simulator_timeout: 10
-      target_speed: 10
+      simulator_mode: 'synchronous'
+      simulator_fps: 20
+      accel_noise_stddev_x: 0.0
+      accel_noise_stddev_y: 0.0
+      accel_noise_stddev_z: 0.0
+      gyro_noise_stddev_x: 0.0
+      gyro_noise_stddev_y: 0.0
+      gyro_noise_stddev_z: 0.0
+      simulator_imu_frequency: 1
     inputs:
-      - id: PlanningMsg
-        type: usize
+     - id: carlaOperatorMsg
+       type: usize
     outputs:
-      - id: WaypointsMsg
-        type: usize
+     - id: carlaImuDriverMsg
+       type: usize
+
+  - id: carlaGnssDriverOperator
+    uri: file://./pylot/drivers/carla_gnss_driver_operator.py
+    configuration:
+      log_file_name: 'pylot.log'
+      name: "center_camera_operator"
+      simulator_host: 'localhost'
+      simulator_port: 2000
+      simulator_timeout: 10
+      simulator_mode: 'synchronous'
+      simulator_fps: 20
+      gnss_noise_stddev_alt: 0.0
+      gnss_noise_stddev_lat: 0.0
+      gnss_noise_stddev_lon: 0.0
+      gnss_bias_alt: 0.0
+      gnss_bias_lat: 0.0
+      gnss_bias_lon: 0.0
+      simulator_gnss_frequency: 10
+    inputs:
+     - id: carlaOperatorMsg
+       type: usize
+    outputs:
+     - id: carlaGnssDriverMsg
+       type: usize
+
+#  - id: PlanningOperator
+#    uri: file://./pylot/planning/planning_operator.py
+#    configuration:
+#      execution_mode: simulation
+#      planning_type: waypoint
+#      tracking_num_steps: 10
+#      static_obstacle_distance_threshold: 70
+#      dynamic_obstacle_distance_threshold: 50
+#      num_waypoints_ahead: 60
+#      obstacle_filtering_distance: '1.0'
+#      obstacle_radius: '1.0'
+#      min_pid_steer_waypoint_distance: 5
+#      traffic_light_min_distance: 5
+#      traffic_light_max_distance: 20
+#      traffic_light_max_angle: '0.6'
+#      coast_factor: '1.75'
+#      stop_for_people: True
+#      stop_for_vehicles: True
+#      stop_for_traffic_lights: True
+#      stop_at_uncontrolled_junctions: False
+#      person_angle_hit_zone: '0.15'
+#      person_distance_hit_zone: 35
+#      person_angle_emergency_zone: '0.5'
+#      person_distance_emergency_zone: 15
+#      max_speed: 35
+#      max_accel: 6
+#      max_curvature: 1
+#      max_road_width_l: 5
+#      max_road_width_r: 1
+#      d_road_w: '0.25'
+#      dt: '0.25'
+#      maxt: 8
+#      mint: 2
+#      d_t_s: '0.25'
+#      n_s_sample: 2
+#      obstacle_clearance_fot: '0.5'
+#      kd: 1
+#      kv: '0.1'
+#      ka: '0.1'
+#      kj: '0.01'
+#      kt: '0.01'
+#      ko: '0.1'
+#      klat: 1
+#      klon: 1
+#      step_size_hybrid_astar: 3
+#      max_iterations_hybrid_astar: 2000
+#      completion_threshold: 1
+#      angle_completion_threshold: 100
+#      rad_step: '0.5'
+#      rad_upper_range: 4
+#      rad_lower_range: 4
+#      obstacle_clearance_hybrid_astar: 1
+#      lane_width_hybrid_astar: 6
+#      radius: 6
+#      car_length: '4.8'
+#      car_width: '1.8'
+#      step_size: '0.5'
+#      max_iterations: 2000
+#      end_dist_threshold: 2
+#      obstacle_clearance: '0.5'
+#      lane_width: 3
+#      simulator_host: localhost
+#      simulator_port: 2000
+#      simulator_timeout: 10
+#      target_speed: 10
+#    inputs:
+#      - id: PlanningMsg
+#        type: usize
+#    outputs:
+#      - id: WaypointsMsg
+#        type: usize
 sources:
 #   - id : DetectionSrc
 #     uri: file://./sources/detection_source.py
@@ -420,13 +422,13 @@ sources:
 #      id: linearMsg
 #      type: usize
 #
-#  - id: carlaSrc
-#    uri: file://./sources/carla_source.py
-#    configuration:
-#       control_path: /home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaOperator/input/ControlMessage.pkl
-#    output:
-#       id: carlaMsg
-#       type: usize
+  - id: carlaSrc
+    uri: file://./sources/carla_source.py
+    configuration:
+       control_path: /home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaOperator/input/ControlMessage.pkl
+    output:
+       id: carlaMsg
+       type: usize
 #  - id: carlaCameraSrc
 #    uri: file://./sources/carla_camera_driver_source.py
 #    configuration:
@@ -435,17 +437,17 @@ sources:
 #       id: carlaCameraMsg
 #       type: usize
 
-  - id: PlanningSrc
-    uri: file://./sources/planning_source.py
-    configuration:
-      lane_msg: ./test_data/PlanningOperator/input/lane_msg-6423.pkl
-      linear_prediction_msg: ./test_data/PlanningOperator/input/linear_prediction_msg-6423.pkl
-      open_drive_msg: ./test_data/PlanningOperator/input/open_drive_msg-0.pkl
-      trajectory_msg: ./test_data/PlanningOperator/input/trajectory_msg-5673.pkl
-      vehicle_transform: ./test_data/PlanningOperator/input/vehicle_transform-6423.pkl
-    output:
-      id: PlanningMsg
-      type: usize
+#  - id: PlanningSrc
+#    uri: file://./sources/planning_source.py
+#    configuration:
+#      lane_msg: ./test_data/PlanningOperator/input/lane_msg-6423.pkl
+#      linear_prediction_msg: ./test_data/PlanningOperator/input/linear_prediction_msg-6423.pkl
+#      open_drive_msg: ./test_data/PlanningOperator/input/open_drive_msg-0.pkl
+#      trajectory_msg: ./test_data/PlanningOperator/input/trajectory_msg-5673.pkl
+#      vehicle_transform: ./test_data/PlanningOperator/input/vehicle_transform-6423.pkl
+#    output:
+#      id: PlanningMsg
+#      type: usize
 
 sinks:
 #   - id : DetectionSink
@@ -458,11 +460,11 @@ sinks:
 #    input:
 #       id: TrafficLightsMsg
 #       type: usize
-#  - id : LocalizationSink
-#    uri: file://./sinks/localization_sink.py
-#    input:
-#       id: localizationMsg
-#       type: usize
+  - id : LocalizationSink
+    uri: file://./sinks/localization_sink.py
+    input:
+       id: localizationMsg
+       type: usize
 #  - id : ObstacleLocationFinderSink
 #    uri: file://./sinks/obstacle_location_finder_sink.py
 #    input:
@@ -529,11 +531,11 @@ sinks:
 #      id: carlaGnssDriverMsg
 #      type: usize
 
-  - id : PlanningSink
-    uri: file://./sinks/planning_sink.py
-    input:
-        id: WaypointsMsg
-        type: usize
+#  - id : PlanningSink
+#    uri: file://./sinks/planning_sink.py
+#    input:
+#        id: WaypointsMsg
+#        type: usize
 
 links:
 
@@ -832,58 +834,60 @@ links:
 
 
 
-#- from:
-#    node : carlaSrc
-#    output : carlaMsg
-#  to:
-#    node : carlaOperator
-#    input : carlaMsg
-#- from:
-#    node : carlaOperator
-#    output : carlaOperatorMsg
-#  to:
-#    node : carlaImuDriverOperator
-#    input : carlaOperatorMsg
-#- from:
-#    node : carlaImuDriverOperator
-#    output : carlaImuDriverMsg
-#  to:
-#    node : LocalizationOperator
-#    input : carlaImuDriverMsg
-#- from:
-#    node : LocalizationOperator
-#    output : localizationMsg
-#  to:
-#    node : LocalizationSink
-#    input : localizationMsg
-#- from:
-#    node : carlaOperator
-#    output : carlaOperatorMsg
-#  to:
-#    node : carlaGnssDriverOperator
-#    input : carlaOperatorMsg
-#- from:
-#    node : carlaGnssDriverOperator
-#    output : carlaGnssDriverMsg
-#  to:
-#    node : LocalizationOperator
-#    input : carlaGnssDriverMsg
-#- from:
-#    node : carlaOperator
-#    output : carlaOperatorMsg
-#  to:
-#    node : LocalizationOperator
-#    input : carlaOperatorMsg
+- from:
+    node : carlaSrc
+    output : carlaMsg
+  to:
+    node : carlaOperator
+    input : carlaMsg
+- from:
+    node : carlaOperator
+    output : carlaOperatorMsg
+  to:
+    node : carlaImuDriverOperator
+    input : carlaOperatorMsg
+- from:
+    node : carlaImuDriverOperator
+    output : carlaImuDriverMsg
+  to:
+    node : LocalizationOperator
+    input : carlaImuDriverMsg
+- from:
+    node : LocalizationOperator
+    output : localizationMsg
+  to:
+    node : LocalizationSink
+    input : localizationMsg
 
 - from:
-    node : PlanningSrc
-    output : PlanningMsg
+    node : carlaOperator
+    output : carlaOperatorMsg
   to:
-    node : PlanningOperator
-    input : PlanningMsg
+    node : carlaGnssDriverOperator
+    input : carlaOperatorMsg
 - from:
-    node : PlanningOperator
-    output : WaypointsMsg
+    node : carlaGnssDriverOperator
+    output : carlaGnssDriverMsg
   to:
-    node : PlanningSink
-    input : WaypointsMsg
+    node : LocalizationOperator
+    input : carlaGnssDriverMsg
+
+- from:
+    node : carlaOperator
+    output : carlaOperatorMsg
+  to:
+    node : LocalizationOperator
+    input : carlaOperatorMsg
+
+#- from:
+#    node : PlanningSrc
+#    output : PlanningMsg
+#  to:
+#    node : PlanningOperator
+#    input : PlanningMsg
+#- from:
+#    node : PlanningOperator
+#    output : WaypointsMsg
+#  to:
+#    node : PlanningSink
+#    input : WaypointsMsg

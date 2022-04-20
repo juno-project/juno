@@ -48,19 +48,9 @@ class CarlaState:
         self.open_drive_stream = None
         self.global_trajectory_stream = None
 
-
-        # logger
-        logger = logging.getLogger(__name__)
-        logger.setLevel(level=logging.INFO)
-        handler = logging.FileHandler(cfg["log_file_name"])
-        handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-
         # self._logger = erdos.utils.setup_logging(cfg["name"],
         #                                          cfg["log_file_name"])
-        self._logger = logger
+        self._logger = pylot.utils.get_logger(cfg["log_file_name"])
         self._csv_logger = erdos.utils.setup_csv_logging(
             cfg["name"] + '-csv', cfg["csv_log_file_name"])
         # Connect to simulator and retrieve the world running.
@@ -384,7 +374,10 @@ class CarlaState:
     def _update_spectactor_pose(self):
         # Set the world simulation view with respect to the vehicle.
         v_pose = self._ego_vehicle.get_transform()
-        v_pose.location -= 10 * Location(v_pose.get_forward_vector())
+        # print("_update_spectactor_pose Location:: {}".format(Location))
+        # print("v_pose.get_forward_vector() : {}".format(v_pose.get_forward_vector()))
+        # v_pose.location -= 10 * Location(v_pose.get_forward_vector())
+        v_pose.location -= 10 * v_pose.get_forward_vector()
         v_pose.location.z = 5
         self._spectator.set_transform(v_pose)
 
