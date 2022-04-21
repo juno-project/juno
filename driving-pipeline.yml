@@ -721,6 +721,7 @@ links:
 #    node : carlaCameraSink
 #    input : carlaCameraDriverMsg
 
+# links-5
 #- from:
 #    node : carlaSrc
 #    output : carlaMsg
@@ -780,6 +781,7 @@ links:
 #    input : carlaGnssDriverMsg
 
 
+# links-3
 
 #- from:
 #    node : carlaSrc
@@ -807,6 +809,8 @@ links:
 #    input : TrafficLightsMsg
 
 
+# links-2
+
 #- from:
 #    node : carlaSrc
 #    output : carlaMsg
@@ -833,6 +837,7 @@ links:
 #    input : LanesMessage
 
 
+# links-0
 
 - from:
     node : carlaSrc
