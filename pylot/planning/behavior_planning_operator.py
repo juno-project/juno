@@ -38,14 +38,15 @@ class BehaviorPlanningState:
         #     [pose_stream, open_drive_stream, route_stream],
         #     [trajectory_stream], self.on_watermark)
         # flags.DEFINE_list('goal_location', '234, 59, 39', 'Ego-vehicle goal location')
-        print("operator init......................")
         self.cfg = cfg
         goal_location = pylot.utils.Location(cfg['goal_location_x'],
                                              cfg['goal_location_y'],
                                              cfg['goal_location_z'])
         # Do not set the goal location here so that the behavior planner
         # issues an initial message.
+        self.trajectory_stream = None
         self._goal_location = None
+        self._logger = pylot.utils.get_logger(cfg["log_file_name"])
         # Initialize the state of the behaviour planner.
         self.__initialize_behaviour_planner()
         self._pose_msgs = deque()
@@ -67,7 +68,6 @@ class BehaviorPlanningState:
             msg (:py:class:`~erdos.message.Message`): Message that contains
                 the open drive string.
         """
-        print("on_opendrive_map....................")
         print('@{}: received open drive message'.format(timestamp))
         from pylot.simulation.utils import map_from_opendrive
         self._map = map_from_opendrive(msg.data, self.cfg['log_file_name'])
@@ -91,7 +91,6 @@ class BehaviorPlanningState:
             msg (:py:class:`~erdos.message.Message`): Message that contains
                 info about the ego vehicle.
         """
-        print("on_pose_update.....................")
         print('@{}: received pose message'.format(timestamp))
         self._pose_msgs.append(msg)
 
@@ -205,42 +204,74 @@ class BehaviorPlanningOperator(Operator):
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
 
-        token = tokens.get('behaviorMsg').get_data()
-        msg = pickle.loads(bytes(token))
+        carla_token = tokens.get("carlaOperatorMsg")
+        localization_token = tokens.get("localizationMsg")
 
-        open_drive = msg['open_drive']
-        vehicle_transform = msg['vehicle_transform']
-        timestamp = msg['timestamp']
+        if carla_token.is_pending():
+            carla_token.set_action_keep()
+            return False
 
-        state.on_pose_update(vehicle_transform, timestamp)
-        # print(open_drive)
-        state.on_opendrive_map(open_drive, timestamp)
+        if localization_token.is_pending():
+            localization_token.set_action_keep()
+            return False
+
+        if not carla_token.is_pending() and not localization_token.is_pending():
+            carla_msg = pickle.loads(bytes(carla_token.get_data()))
+            localization_msg = pickle.loads(bytes(localization_token.get_data()))
+
+            global_trajectory_stream = carla_msg['global_trajectory_stream']
+            open_drive_stream = carla_msg['open_drive_stream']
+            pose_stream = localization_msg
+
+            if global_trajectory_stream == None or open_drive_stream == None or pose_stream == None:
+                carla_token.set_action_drop()
+                localization_token.set_action_drop()
+                return False
+
+            state.timestamp = carla_msg['timestamp']
+            state.global_trajectory_stream = global_trajectory_stream
+            state.open_drive_stream = open_drive_stream
+            state.pose_stream = pose_stream
+
+            # print("global_trajectory_stream :{}".format(global_trajectory_stream))
+            # print("open_drive_stream :{}".format(open_drive_stream))
+            # print("pose_stream :{}".format(pose_stream))
+
+            state.on_pose_update(pose_stream, state.timestamp)
+            state.on_opendrive_map(open_drive_stream, state.timestamp)
+
+
+        # token = tokens.get('behaviorMsg').get_data()
+        # msg = pickle.loads(bytes(token))
+        #
+        # open_drive = msg['open_drive']
+        # vehicle_transform = msg['vehicle_transform']
+        # timestamp = msg['timestamp']
+        #
+        # state.on_pose_update(vehicle_transform, timestamp)
+        # # print(open_drive)
+        # state.on_opendrive_map(open_drive, timestamp)
         return True
 
     def output_rule(self, _ctx, state, outputs, _deadline_miss):
         return outputs
 
     def run(self, _ctx, state, inputs):
-        msg = inputs.get("behaviorMsg").data
-        # print("@: inputs:  {}".format(msg))
-        msg = pickle.loads(msg)
-
         # # Retrieve the messages for this timestamp
-        timestamp = msg['timestamp']
-
-        print('@{}: received watermark'.format(timestamp))
+        timestamp = state.timestamp
+        state._logger.info('@{}: received watermark'.format(timestamp))
 
         # return {'behaviorPlanningMsg': pickle.dumps("test")}
         # if timestamp.is_top:
         #     return
-        pose_msg = state._pose_msgs.popleft()
-        print("pose_msg: {}".format(pose_msg))
-        ego_transform = pose_msg
 
+        pose_msg = state._pose_msgs.popleft()
+        # print("pose_msg: {}".format(pose_msg))
+        ego_transform = pose_msg.post.transform
         state._ego_info.update(state._state, pose_msg)
         old_state = state._state
         state._state = state.best_state_transition(state._ego_info)
-        print('@{}: agent transitioned from {} to {}'.format(
+        state._logger.info('@{}: agent transitioned from {} to {}'.format(
             timestamp, old_state, state._state))
         # Remove the waypoint from the route if we're close to it.
         if (old_state != state._state
@@ -274,12 +305,14 @@ class BehaviorPlanningOperator(Operator):
                 waypoints = Waypoints(
                     deque([ego_transform]),
                     road_options=deque([pylot.utils.RoadOption.LANE_FOLLOW]))
-            return {"behaviorPlanningMsg": pickle.dumps(WaypointsMessage(timestamp, waypoints, state._state))}
+            state.trajectory_stream = pickle.dumps(WaypointsMessage(timestamp, waypoints, state._state))
+            # return {"behaviorPlanningMsg": pickle.dumps(WaypointsMessage(timestamp, waypoints, state._state))}
         elif old_state != state._state:
             # Send the state update.
-            return {"behaviorPlanningMsg": pickle.dumps(WaypointsMessage(timestamp, None, state._state))}
+            state.trajectory_stream = pickle.dumps(WaypointsMessage(timestamp, None, state._state))
+            # return {"behaviorPlanningMsg": pickle.dumps(WaypointsMessage(timestamp, None, state._state))}
 
-        return {"behaviorPlanningMsg": pickle.dumps(None)}
+        return {"behaviorPlanningMsg": state.trajectory_stream}
 
 
 
@@ -292,13 +325,12 @@ class EgoInfo(object):
         self.current_time = 0
 
     def update(self, state, pose_msg):
-        # self.current_time = pose_msg.timestamp.coordinates[0]
-        state.current_time = time.time()
+        self.current_time = pose_msg.timestamp
         # if pose_msg.data.forward_speed >= 0.7:
-        if 1 >= 0.7:
-            state.last_time_moving = state.current_time
+        if pose_msg.post.forward_speed >= 0.7:
+            self.last_time_moving = self.current_time
         else:
-            state.last_time_stopped = state.current_time
+            self.last_time_stopped = self.current_time
 
 
 def register():

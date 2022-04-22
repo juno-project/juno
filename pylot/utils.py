@@ -498,7 +498,6 @@ class Location(Vector3D):
 
         # This wasn't in the original method, but seems to be necessary.
         y *= -1
-
         return cls(x, y, altitude)
 
     def distance(self, other) -> float:
