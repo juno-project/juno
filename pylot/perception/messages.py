@@ -150,18 +150,19 @@ class ObstaclesMessage():
             produced the obstacles (in ms).
     """
 
-    def __init__(self, timestamp, obstacles, runtime=0):
+    def __init__(self, timestamp, obstacles, camera_setup=None, runtime=0):
         self.timestamp = timestamp
         self.obstacles = obstacles
         self.runtime = runtime
+        self.camera_setup = camera_setup
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
         return 'ObstaclesMessage(timestamp: {}, runtime: {}, ' \
-               'obstacles: {})'.format(
-            self.timestamp, self.runtime, self.obstacles)
+               'obstacles: {}, camera_setup: {})'.format(
+            self.timestamp, self.runtime, self.obstacles, self.camera_setup)
 
 
 class ObstaclePositionsSpeedsMessage(erdos.Message):

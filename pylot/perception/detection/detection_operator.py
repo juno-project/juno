@@ -64,7 +64,13 @@ class DetectionOperator():
         return DetectionState(configuration)
 
     def input_rule(self, _ctx, state, tokens):
-        # Using input rules
+        token = tokens.get('carlaCameraDriverMsg')
+        msg = pickle.loads(bytes(token.get_data()))
+        print("carlaCameraDriverMsg: {}".format(msg))
+        if msg['camera_stream'] == None:
+            token.set_action_drop()
+            return False
+        state.camera_stream = msg['camera_stream']
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
@@ -74,10 +80,9 @@ class DetectionOperator():
         return None
 
     def run(self, _ctx, _state, inputs):
-        msg = inputs.get("FrameMsg").data
-        msg = pickle.loads(msg)
-        print('@{}: {} received message'.format(
-            msg.timestamp, 'DetectionOperator'))
+        msg = _state.camera_stream
+        print('@{}: {} received message: {}'.format(
+            msg.timestamp, 'DetectionOperator', msg))
         start_time = time.time()
         # The models expect BGR images.
         assert msg.frame.encoding == 'BGR', 'Expects BGR frames'
@@ -110,8 +115,8 @@ class DetectionOperator():
                 print('Filtering unknown class: {}'.format(
                     res_classes[i]))
 
-        print('@{}: {} obstacles: {}'.format(
-            msg.timestamp, 'DetectionOperator', obstacles))
+        # print('@{}: {} obstacles: {}'.format(
+        #     msg.timestamp, 'DetectionOperator', obstacles))
 
         # Get runtime in ms.
         runtime = (time.time() - start_time) * 1000
@@ -124,7 +129,8 @@ class DetectionOperator():
             msg.frame.save(msg.timestamp, _state.cfg['out_path'],
                            'detector-{}'.format('DetectionOperator'))
 
-        return {'ObstaclesMsg': pickle.dumps(ObstaclesMessage(msg.timestamp, obstacles, runtime))}
+        camera_setup = msg.frame.camera_setup
+        return {'ObstaclesMsg': pickle.dumps(ObstaclesMessage(msg.timestamp, obstacles, camera_setup, runtime))}
 
 
 def register():

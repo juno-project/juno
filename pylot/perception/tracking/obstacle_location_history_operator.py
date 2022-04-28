@@ -7,39 +7,57 @@ from pylot.perception.detection.utils import get_obstacle_locations
 from pylot.perception.messages import ObstacleTrajectoriesMessage
 from pylot.perception.tracking.obstacle_trajectory import ObstacleTrajectory
 
+
 class ObstacleLocationHistoryState:
     def __init__(self, cfg):
         self.cfg = cfg
 
+
 class ObstacleLocationHistoryOperator:
     def initialize(self, configuration):
-         return ObstacleLocationHistoryState(configuration)
+        return ObstacleLocationHistoryState(configuration)
 
     def finalize(self, state):
         return None
 
     def input_rule(self, _ctx, state, tokens):
-        # Using input rules
+        print("object tracker operator received msgs.")
+        obstacle_token = tokens.get('ObstaclesMsg')
+        lidar_token = tokens.get('carlaLidarDriverMsg')
+
+        if obstacle_token.is_pending():
+            obstacle_token.set_action_keep()
+            return False
+        if lidar_token.is_pending():
+            lidar_token.set_action_keep()
+            return False
+
+        if not obstacle_token.is_pending() and not lidar_token.is_pending():
+            obstacles_msg = pickle.loads(bytes(obstacle_token.get_data()))
+            lidar_msg = pickle.loads(bytes(lidar_token.get_data()))
+            if obstacles_msg is None or lidar_msg['lidar_stream'] is None:
+                obstacle_token.set_action_drop()
+                lidar_token.set_action_drop()
+                return False
+            state.obstacles_msg = obstacles_msg
+            state.point_cloud_msg = lidar_msg['lidar_stream']
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
         return outputs
 
     def run(self, _ctx, _state, inputs):
-        print("operator starts running")
-        msg = inputs.get("ObstaclesMsg").data
-        msg = pickle.loads(msg)
-        timestamp = msg[0]
-        depth_msg = msg[1]
-        obstacles_msg = msg[2]
-        vehicle_transform = msg[3]
-        camera_setup = msg[4]
+        timestamp = _state.obstacles_msg.timestamp
+        depth_msg = _state.point_cloud_msg
+        obstacles_msg = _state.obstacles_msg
+        vehicle_transform = _state.point_cloud_msg.point_cloud.transform
+        camera_setup = _state.obstacles_msg.camera_setup
 
         print('@{}: received watermark'.format(timestamp))
 
         obstacles_with_location = get_obstacle_locations(
             obstacles_msg.obstacles, depth_msg, vehicle_transform,
-            camera_setup, None)
+            camera_setup)
 
         ids_cur_timestamp = []
         obstacle_trajectories = []
@@ -74,10 +92,9 @@ class ObstacleLocationHistoryOperator:
                 pylot.utils.time_epoch_ms(), timestamp.coordinates[0],
                 "[{} {}]".format(obstacle.id, obstacle.label),
                 "[{:.4f} {:.4f} {:.4f}]".format(x, y, z)))
-        
 
-        return {'ObstacleTrajectoriesMessage': pickle.dumps(ObstacleTrajectoriesMessage(timestamp, obstacle_trajectories))}
-        
+        return {
+            'ObstacleTrajectoriesMessage': pickle.dumps(ObstacleTrajectoriesMessage(timestamp, obstacle_trajectories))}
 
         # self._timestamp_history.append(timestamp)
         # self._timestamp_to_id[timestamp] = ids_cur_timestamp
@@ -88,6 +105,7 @@ class ObstacleLocationHistoryOperator:
         #         if len(self._obstacle_history[obstacle_id]) == 0:
         #             del self._obstacle_history[obstacle_id]
         #     del self._timestamp_to_id[gc_timestamp]
+
 
 def register():
     return ObstacleLocationHistoryOperator
