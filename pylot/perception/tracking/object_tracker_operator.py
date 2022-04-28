@@ -10,7 +10,8 @@ class ObjectTrackerState:
     def __init__(self, cfg):
         self.cfg = cfg
         self._last_tracker_run_completion_time = 0
-        self._detection_update_count = -1
+        self.detection_update_count = -1
+        self.track_every_nth_detection = 1
         self.tracker_type = cfg['tracker_type']
         self.min_matching_iou = float(cfg['min_matching_iou'])
         self.obstacle_track_max_age = cfg['obstacle_track_max_age']
@@ -26,51 +27,75 @@ class ObjectTrackerOperator:
         return None
 
     def input_rule(self, _ctx, state, tokens):
-        # Using input rules
+        print("object tracker operator received msgs.")
+        obstacle_token = tokens.get('ObstaclesWithLocationMsg')
+        camera_token = tokens.get('carlaCameraDriverMsg')
+        if camera_token.is_pending():
+            print("camera pending")
+            camera_token.set_action_keep()
+            return False
+        if obstacle_token.is_pending():
+            print("obstacle pending")
+            obstacle_token.set_action_drop()
+            return False
+
+        if not obstacle_token.is_pending() and not camera_token.is_pending():
+            print("neither pending")
+            obstacles_msg = pickle.loads(bytes(obstacle_token.get_data()))
+            camera_msg = pickle.loads(bytes(camera_token.get_data()))
+
+            camera_stream = camera_msg['camera_stream']
+
+            if obstacles_msg is None or camera_stream is None:
+                print("either none")
+                obstacle_token.set_action_drop()
+                camera_token.set_action_drop()
+                return False
+            state.obstacles_msg = obstacles_msg
+            state.camera_stream = camera_stream
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
         return outputs
 
     def run(self, _ctx, _state, inputs):
-        print("operator starts running")
-        msg = inputs.get("ObjectMsg").data
-        msg = pickle.loads(msg)
-        timestamp = msg[0]
-        print('@{}: received watermark'.format(timestamp))
-        frame_msg = msg[2]
-        camera_frame = frame_msg.frame
-        tracked_obstacles = []
-        detector_runtime = 0
-        reinit_runtime = 0
-        # Check if the most recent obstacle message has this timestamp.
-        # If it doesn't, then the detector might have skipped sending
-        # an obstacle message.
-        if (len(self._obstacles_msgs) > 0
-                and self._obstacles_msgs[0].timestamp == timestamp):
-            obstacles_msg = msg[1]
-            _state._detection_update_count += 1
-            if (_state._detection_update_count %
-                    self._flags.track_every_nth_detection == 0):
-                # Reinitialize the tracker with new detections.
-                print(
-                    'Restarting trackers at frame {}'.format(timestamp))
-                detected_obstacles = []
-                for obstacle in obstacles_msg.obstacles:
-                    if obstacle.is_vehicle() or obstacle.is_person():
-                        detected_obstacles.append(obstacle)
-                reinit_runtime, _ = self._reinit_tracker(
-                    camera_frame, detected_obstacles)
-                detector_runtime = obstacles_msg.runtime
-        tracker_runtime, (ok, tracked_obstacles) = \
-            self._run_tracker(camera_frame)
-        assert ok, 'Tracker failed at timestamp {}'.format(timestamp)
-        tracker_runtime = tracker_runtime + reinit_runtime
-        tracker_delay = self.__compute_tracker_delay(timestamp.coordinates[0],
-                                                     detector_runtime,
-                                                     tracker_runtime,
-                                                     _state)
-        return {'ObstaclesMessage': pickle.dumps(ObstaclesMessage(timestamp, tracked_obstacles, tracker_delay))}
+        print("erererere")
+        # frame_msg = _state.camera_stream
+        # camera_frame = frame_msg.frame
+        # obstacles_msg = _state.obstacles_msg
+        # timestamp = frame_msg.timestamp
+        # print('@{}: received watermark'.format(timestamp))
+        #
+        # tracked_obstacles = []
+        # detector_runtime = 0
+        # reinit_runtime = 0
+        # # Check if the most recent obstacle message has this timestamp.
+        # # If it doesn't, then the detector might have skipped sending
+        # # an obstacle message.
+        # if (len(obstacles_msg.obstacles) > 0
+        #         and obstacles_msg.timestamp == timestamp):
+        #     _state.detection_update_count += 1
+        #     if _state.detection_update_count % _state.track_every_nth_detection == 0:
+        #         # Reinitialize the tracker with new detections.
+        #         print(
+        #             'Restarting trackers at frame {}'.format(timestamp))
+        #         detected_obstacles = []
+        #         for obstacle in obstacles_msg.obstacles:
+        #             if obstacle.is_vehicle() or obstacle.is_person():
+        #                 detected_obstacles.append(obstacle)
+        #         reinit_runtime, _ = self._reinit_tracker(
+        #             camera_frame, detected_obstacles)
+        #         detector_runtime = obstacles_msg.runtime
+        # tracker_runtime, (ok, tracked_obstacles) = \
+        #     self._run_tracker(camera_frame)
+        # assert ok, 'Tracker failed at timestamp {}'.format(timestamp)
+        # tracker_runtime = tracker_runtime + reinit_runtime
+        # tracker_delay = self.__compute_tracker_delay(timestamp.coordinates[0],
+        #                                              detector_runtime,
+        #                                              tracker_runtime,
+        #                                              _state)
+        # return {'ObstaclesMessage': pickle.dumps(ObstaclesMessage(timestamp, tracked_obstacles, None, tracker_delay))}
+        return {'ObstaclesMessage': pickle.dumps(None)}
 
     def __compute_tracker_delay(self, world_time, detector_runtime,
                                 tracker_runtime, _state):

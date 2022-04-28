@@ -11,7 +11,7 @@ class MySink(Sink):
 
     def run(self, _ctx, _state, input):
         msg = pickle.loads(input.data)
-        print(msg)
+        print("object tracker sink msg: {}".format(msg))
 
 def register():
     return MySink
