@@ -4,7 +4,7 @@ import sys
 sys.path.remove("/home/erdos/workspace/pylot")
 sys.path.append('/usr/lib/python3.8')
 sys.path.append('/home/erdos/.local/lib/python3.8/site-packages')
-sys.path.append('/home/erdos/workspace/zenoh-flow-auto-driving')
+sys.path.append('/home/erdos/workspace/zenoh-flow-auto-driving-xf')
 sys.path.append("/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg")
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"

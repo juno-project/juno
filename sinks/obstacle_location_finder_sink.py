@@ -12,7 +12,7 @@ class MySink(Sink):
 
     def run(self, _ctx, _state, input):
         msg = pickle.loads(input.data)
-        print(msg)
+        # print(msg)
 
 def register():
     return MySink
