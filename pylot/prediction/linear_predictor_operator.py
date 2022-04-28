@@ -6,6 +6,7 @@ from pylot.prediction.obstacle_prediction import ObstaclePrediction
 from pylot.utils import Location, Transform
 from zenoh_flow import Inputs, Operator, Outputs
 
+
 class LinearPredictorState():
     """Operator that implements a linear predictor.
 
@@ -21,7 +22,8 @@ class LinearPredictorState():
             :py:class:`~pylot.prediction.messages.PredictionMessage` messages.
         flags (absl.flags): Object to be used to access absl flags.
     """
-    def  __init__(self, cfg):
+
+    def __init__(self, cfg):
         # tracking_stream.add_callback(self.generate_predicted_trajectories,
         #                              [linear_prediction_stream])
         # time_to_decision_stream.add_callback(self.on_time_to_decision_update)
@@ -36,24 +38,31 @@ class LinearPredictorState():
 
 class LinearPredictorOperator(Operator):
     def initialize(self, configuration):
-         return LinearPredictorState(configuration)
+        return LinearPredictorState(configuration)
 
     def finalize(self, state):
 
         return None
 
     def input_rule(self, _ctx, state, tokens):
-        # Using input rules
+        obstacle_token = tokens.get('ObstacleTrajectoriesMsg')
+
+        if obstacle_token.is_pending():
+            obstacle_token.set_action_keep()
+            return False
+
+        obstacles_msg = pickle.loads(bytes(obstacle_token.get_data()))
+        if obstacles_msg is None:
+            obstacle_token.set_action_drop()
+            return False
+        state.obstacles_msg = obstacles_msg
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
         return outputs
 
     def run(self, _ctx, _state, inputs):
-        msg = inputs.get("linearMsg").data
-        # print("@: inputs:  {}".format(msg))
-        msg = pickle.loads(msg)
-        msg = msg['tracked_obstacles']
+        msg = _state.obstacles_msg
 
         obstacle_predictions_list = []
         nearby_obstacle_trajectories, nearby_obstacles_ego_transforms = \
