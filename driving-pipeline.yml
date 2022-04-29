@@ -1,20 +1,20 @@
 flow: AutoDrivingPipeline
 operators:
-#  - id : DetectionOperator
-#    uri: file://./pylot/perception/detection/detection_operator.py
-#    configuration:
-#      obstacle_detection_gpu_index: 0
-#      model_path: /home/erdos/workspace/pylot/dependencies/models/obstacle_detection/faster-rcnn/
-#      path_coco_labels: /home/erdos/workspace/pylot/dependencies/models/pylot.names
-#      obstacle_detection_min_score_threshold: 3
-#      log_detector_output: true
-#      out_path: ./out_data/
-#    inputs:
-#      - id: carlaCameraDriverMsg
-#        type: usize
-#    outputs:
-#      - id: ObstaclesMsg
-#        type: usize
+  - id : DetectionOperator
+    uri: file://./pylot/perception/detection/detection_operator.py
+    configuration:
+      obstacle_detection_gpu_index: 0
+      model_path: /home/erdos/workspace/pylot/dependencies/models/obstacle_detection/faster-rcnn/
+      path_coco_labels: /home/erdos/workspace/pylot/dependencies/models/pylot.names
+      obstacle_detection_min_score_threshold: 3
+      log_detector_output: true
+      out_path: ./out_data/
+    inputs:
+      - id: carlaCameraDriverMsg
+        type: usize
+    outputs:
+      - id: ObstaclesMsg
+        type: usize
 #  - id : TrafficLightDetOperator
 #    uri: file://./pylot/perception/detection/traffic_light_det_operator.py
 #    configuration:
@@ -43,16 +43,16 @@ operators:
 #    outputs:
 #       - id: localizationMsg
 #         type: usize
-#  - id: ObstacleLocationFinderOperator
-#    uri: file://./pylot/perception/detection/obstacle_location_finder_operator.py
-#    inputs:
-#      - id: carlaLidarDriverMsg
-#        type: usize
-#      - id: ObstaclesMsg
-#        type: usize
-#    outputs:
-#      - id: ObstaclesWithLocationMsg
-#        type: usize
+  - id: ObstacleLocationFinderOperator
+    uri: file://./pylot/perception/detection/obstacle_location_finder_operator.py
+    inputs:
+      - id: carlaLidarDriverMsg
+        type: usize
+      - id: ObstaclesMsg
+        type: usize
+    outputs:
+      - id: ObstaclesWithLocationMsg
+        type: usize
 #  - id: ObstacleLocationHistoryOperator
 #    uri: file://./pylot/perception/tracking/obstacle_location_history_operator.py
 #    inputs:
@@ -64,22 +64,22 @@ operators:
 #      - id: ObstacleTrajectoriesMsg
 #        type: usize
 
-#  - id: ObjectTrackerOperator
-#    uri: file://./pylot/perception/tracking/object_tracker_operator.py
-#    configuration:
-#      tracker_type: sort
-#      min_matching_iou: '0.5'
-#      obstacle_track_max_age: 3
-#      da_siam_rpn_model_path: dependencies/models/tracking/DASiamRPN/SiamRPNVOT.model
-#      deep_sort_tracker_weights_path: dependencies/models/tracking/deep-sort-carla/feature_extractor
-#    inputs:
-#      - id: carlaCameraDriverMsg
-#        type: usize
-#      - id: ObstaclesWithLocationMsg
-#        type: usize
-#    outputs:
-#      - id: ObstaclesMsg
-#        type: usize
+  - id: ObjectTrackerOperator
+    uri: file://./pylot/perception/tracking/object_tracker_operator.py
+    configuration:
+      tracker_type: sort
+      min_matching_iou: '0.5'
+      obstacle_track_max_age: 3
+      da_siam_rpn_model_path: dependencies/models/tracking/DASiamRPN/SiamRPNVOT.model
+      deep_sort_tracker_weights_path: dependencies/models/tracking/deep-sort-carla/feature_extractor
+    inputs:
+      - id: carlaCameraDriverMsg
+        type: usize
+      - id: ObstaclesWithLocationMsg
+        type: usize
+    outputs:
+      - id: ObstaclesMsg
+        type: usize
 #
 #  - id: PIDControlOperator
 #    uri: file://./pylot/control/pid_control_operator.py
@@ -146,83 +146,83 @@ operators:
 #     - id: linearPredictorMsg
 #       type: usize
 
-#  - id: carlaOperator
-#    uri: file://./pylot/simulation/carla_operator.py
-#    configuration:
-#       name: 'simulator_bridge_operator'
-#       log_file_name: 'pylot.log'
-#       csv_log_file_name: 'pylot.csv'
-#       simulator_host: 'localhost'
-#       simulator_port: 2000
-#       simulator_timeout: 10
-#       #boolean  会识别成字符串False
-#       scenario_runner: False
-#       control: 'simulator_auto_pilot'
-#       carla_traffic_manager_port: 8000
-#       simulator_mode: 'synchronous'
-#       simulator_control_frequency: -1
-#       simulator_localization_frequency: -1
-#       simulator_fps: 20
-#       simulator_town: 1
-#       simulator_weather: 'ClearNoon'
-#       simulator_spawn_point_index: -1
-#       simulator_num_people: 250
-#       simulator_num_vehicles: 20
-#       simulator_vehicle_moi: 1
-#       simulator_vehicle_mass: 100
-#    inputs:
-#     - id: carlaMsg
-#       type: usize
-#    outputs:
-#     - id: carlaOperatorMsg
-#       type: usize
-#
-#  - id: carlaCameraDriverOperator
-#    uri: file://./pylot/drivers/carla_camera_driver_operator.py
-#    configuration:
-#      log_file_name: 'pylot.log'
-#      camera_name: 'center_camera_operator'
-#      camera_image_width: 1920
-#      camera_image_height: 1080
-#      camera_fov: 90.0
-#      visualize_depth_camera: False
-#      name: "center_camera_operator"
-#      simulator_host: 'localhost'
-#      simulator_port: 2000
-#      simulator_timeout: 10
-#      simulator_camera_frequency: -1
-#      simulator_mode: 'synchronous'
-#      simulator_fps: 2
-#    inputs:
-#     - id: carlaOperatorMsg
-#       type: usize
-#    outputs:
-#     - id: carlaCameraDriverMsg
-#       type: usize
-#
-#  - id: carlaLidarDriverOperator
-#    uri: file://./pylot/drivers/carla_lidar_driver_operator.py
-#    configuration:
-#      log_file_name: 'pylot.log'
-#      camera_name: 'center_camera_operator'
-#      camera_image_width: 1920
-#      camera_image_height: 1080
-#      camera_fov: 90.0
-#      visualize_depth_camera: False
-#      name: "center_camera_operator"
-#      simulator_host: 'localhost'
-#      simulator_port: 2000
-#      simulator_timeout: 10
-#      simulator_camera_frequency: -1
-#      simulator_mode: 'synchronous'
-#      simulator_fps: 20
-#      simulator_lidar_frequency: 1
-#    inputs:
-#     - id: carlaOperatorMsg
-#       type: usize
-#    outputs:
-#     - id: carlaLidarDriverMsg
-#       type: usize
+  - id: carlaOperator
+    uri: file://./pylot/simulation/carla_operator.py
+    configuration:
+       name: 'simulator_bridge_operator'
+       log_file_name: 'pylot.log'
+       csv_log_file_name: 'pylot.csv'
+       simulator_host: 'localhost'
+       simulator_port: 2000
+       simulator_timeout: 10
+       #boolean  会识别成字符串False
+       scenario_runner: False
+       control: 'simulator_auto_pilot'
+       carla_traffic_manager_port: 8000
+       simulator_mode: 'synchronous'
+       simulator_control_frequency: -1
+       simulator_localization_frequency: -1
+       simulator_fps: 20
+       simulator_town: 1
+       simulator_weather: 'ClearNoon'
+       simulator_spawn_point_index: -1
+       simulator_num_people: 250
+       simulator_num_vehicles: 20
+       simulator_vehicle_moi: 1
+       simulator_vehicle_mass: 100
+    inputs:
+     - id: carlaMsg
+       type: usize
+    outputs:
+     - id: carlaOperatorMsg
+       type: usize
+
+  - id: carlaCameraDriverOperator
+    uri: file://./pylot/drivers/carla_camera_driver_operator.py
+    configuration:
+      log_file_name: 'pylot.log'
+      camera_name: 'center_camera_operator'
+      camera_image_width: 1920
+      camera_image_height: 1080
+      camera_fov: 90.0
+      visualize_depth_camera: False
+      name: "center_camera_operator"
+      simulator_host: 'localhost'
+      simulator_port: 2000
+      simulator_timeout: 10
+      simulator_camera_frequency: -1
+      simulator_mode: 'synchronous'
+      simulator_fps: 2
+    inputs:
+     - id: carlaOperatorMsg
+       type: usize
+    outputs:
+     - id: carlaCameraDriverMsg
+       type: usize
+
+  - id: carlaLidarDriverOperator
+    uri: file://./pylot/drivers/carla_lidar_driver_operator.py
+    configuration:
+      log_file_name: 'pylot.log'
+      camera_name: 'center_camera_operator'
+      camera_image_width: 1920
+      camera_image_height: 1080
+      camera_fov: 90.0
+      visualize_depth_camera: False
+      name: "center_camera_operator"
+      simulator_host: 'localhost'
+      simulator_port: 2000
+      simulator_timeout: 10
+      simulator_camera_frequency: -1
+      simulator_mode: 'synchronous'
+      simulator_fps: 20
+      simulator_lidar_frequency: 1
+    inputs:
+     - id: carlaOperatorMsg
+       type: usize
+    outputs:
+     - id: carlaLidarDriverMsg
+       type: usize
 
 #  - id: carlaImuDriverOperator
 #    uri: file://./pylot/drivers/carla_imu_driver_operator.py
@@ -344,25 +344,23 @@ operators:
 #      - id: WaypointsMsg
 #        type: usize
 
-
-
-  - id: HeadOperator
-    uri: file://./test/head_operator.py
-    inputs:
-     - id: testMsg
-       type: usize
-    outputs:
-     - id: headOperatorMsg
-       type: usize
-
-  - id: EndOperator
-    uri: file://./test/end_operator.py
-    inputs:
-      - id: headOperatorMsg
-        type: usize
-    outputs:
-      - id: endOperatorMsg
-        type: usize
+#  - id: HeadOperator
+#    uri: file://./test/head_operator.py
+#    inputs:
+#     - id: testMsg
+#       type: usize
+#    outputs:
+#     - id: headOperatorMsg
+#       type: usize
+#
+#  - id: EndOperator
+#    uri: file://./test/end_operator.py
+#    inputs:
+#      - id: headOperatorMsg
+#        type: usize
+#    outputs:
+#      - id: endOperatorMsg
+#        type: usize
 
 sources:
 #   - id : DetectionSrc
@@ -450,13 +448,13 @@ sources:
 #      id: linearMsg
 #      type: usize
 #
-#  - id: carlaSrc
-#    uri: file://./sources/carla_source.py
-#    configuration:
-#       control_path: /home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaOperator/input/ControlMessage.pkl
-#    output:
-#       id: carlaMsg
-#       type: usize
+  - id: carlaSrc
+    uri: file://./sources/carla_source.py
+    configuration:
+       control_path: /home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaOperator/input/ControlMessage.pkl
+    output:
+       id: carlaMsg
+       type: usize
 #  - id: carlaCameraSrc
 #    uri: file://./sources/carla_camera_driver_source.py
 #    configuration:
@@ -477,12 +475,11 @@ sources:
 #      id: PlanningMsg
 #      type: usize
 
-- id: testSrc
-  uri: file://./sources/test_source.py
-  output:
-     id: testMsg
-     type: usize
-
+#  - id: testSrc
+#    uri: file://./sources/test_source.py
+#    output:
+#       id: testMsg
+#       type: usize
 sinks:
 #  - id : DetectionSink
 #    uri: file://./sinks/detection_sink.py
@@ -509,11 +506,11 @@ sinks:
 #    input:
 #        id: ObstacleTrajectoriesMsg
 #        type: usize
-#  - id : ObjectTrackerSink
-#    uri: file://./sinks/object_tracker_sink.py
-#    input:
-#        id: ObstaclesMsg
-#        type: usize
+  - id : ObjectTrackerSink
+    uri: file://./sinks/object_tracker_sink.py
+    input:
+        id: ObstaclesMsg
+        type: usize
 #  - id : PIDControlSink
 #    uri: file://./sinks/pid_control_sink.py
 #    input:
@@ -572,11 +569,11 @@ sinks:
 #        type: usize
 
 
-  - id : testSink
-    uri: file://./sinks/test_sink.py
-    input:
-        id: endOperatorMsg
-        type: usize
+#  - id : testSink
+#    uri: file://./sinks/test_sink.py
+#    input:
+#        id: endOperatorMsg
+#        type: usize
 links:
 
 #- from:
@@ -742,18 +739,18 @@ links:
 
 # links-2
 
-#- from:
-#    node : carlaSrc
-#    output : carlaMsg
-#  to:
-#    node : carlaOperator
-#    input : carlaMsg
-#- from:
-#    node : carlaOperator
-#    output : carlaOperatorMsg
-#  to:
-#    node : carlaCameraDriverOperator
-#    input : carlaOperatorMsg
+- from:
+    node : carlaSrc
+    output : carlaMsg
+  to:
+    node : carlaOperator
+    input : carlaMsg
+- from:
+    node : carlaOperator
+    output : carlaOperatorMsg
+  to:
+    node : carlaCameraDriverOperator
+    input : carlaOperatorMsg
 
 
 # links-5
@@ -763,12 +760,12 @@ links:
 #  to:
 #    node : carlaOperator
 #    input : carlaMsg
-#- from:
-#    node : carlaOperator
-#    output : carlaOperatorMsg
-#  to:
-#    node : carlaLidarDriverOperator
-#    input : carlaOperatorMsg
+- from:
+    node : carlaOperator
+    output : carlaOperatorMsg
+  to:
+    node : carlaLidarDriverOperator
+    input : carlaOperatorMsg
 #- from:
 #    node : carlaLidarDriverOperator
 #    output : carlaLidarDriverMsg
@@ -945,42 +942,42 @@ links:
 #    input : behaviorPlanningMsg
 
 # links-6
-#- from:
-#    node : carlaCameraDriverOperator
-#    output : carlaCameraDriverMsg
-#  to:
-#    node : DetectionOperator
-#    input : carlaCameraDriverMsg
-#- from:
-#    node : DetectionOperator
-#    output : ObstaclesMsg
-#  to:
-#    node : ObstacleLocationFinderOperator
-#    input : ObstaclesMsg
-#- from:
-#    node : carlaLidarDriverOperator
-#    output : carlaLidarDriverMsg
-#  to:
-#    node : ObstacleLocationFinderOperator
-#    input : carlaLidarDriverMsg
-#- from:
-#    node : carlaCameraDriverOperator
-#    output : carlaCameraDriverMsg
-#  to:
-#    node : ObjectTrackerOperator
-#    input : carlaCameraDriverMsg
-#- from:
-#    node : ObstacleLocationFinderOperator
-#    output : ObstaclesWithLocationMsg
-#  to:
-#    node : ObjectTrackerOperator
-#    input : ObstaclesWithLocationMsg
-#- from:
-#    node : ObjectTrackerOperator
-#    output : ObstaclesMsg
-#  to:
-#    node : ObjectTrackerSink
-#    input : ObstaclesMsg
+- from:
+    node : carlaCameraDriverOperator
+    output : carlaCameraDriverMsg
+  to:
+    node : DetectionOperator
+    input : carlaCameraDriverMsg
+- from:
+    node : DetectionOperator
+    output : ObstaclesMsg
+  to:
+    node : ObstacleLocationFinderOperator
+    input : ObstaclesMsg
+- from:
+    node : carlaLidarDriverOperator
+    output : carlaLidarDriverMsg
+  to:
+    node : ObstacleLocationFinderOperator
+    input : carlaLidarDriverMsg
+- from:
+    node : carlaCameraDriverOperator
+    output : carlaCameraDriverMsg
+  to:
+    node : ObjectTrackerOperator
+    input : carlaCameraDriverMsg
+- from:
+    node : ObstacleLocationFinderOperator
+    output : ObstaclesWithLocationMsg
+  to:
+    node : ObjectTrackerOperator
+    input : ObstaclesWithLocationMsg
+- from:
+    node : ObjectTrackerOperator
+    output : ObstaclesMsg
+  to:
+    node : ObjectTrackerSink
+    input : ObstaclesMsg
 #- from:
 #    node : ObjectTrackerOperator
 #    output : ObstaclesMsg
@@ -1007,30 +1004,29 @@ links:
 #    input : linearPredictorMsg
 
 
-
-- from:
-    node : testSrc
-    output : testMsg
-  to:
-    node : HeadOperator
-    input : testMsg
-- from:
-    node : HeadOperator
-    output : headOperatorMsg
-  to:
-    node : EndOperator
-    input : headOperatorMsg
-- from:
-    node : EndOperator
-    output : endOperatorMsg
-  to:
-    node : testSink
-    input : endOperatorMsg
-
-
-loops:
-- ingress: HeadOperator
-  egress: EndOperator
-  feedback_port: feedback-AC
-  port_type: int
-  is_infinite: false
+#- from:
+#    node : testSrc
+#    output : testMsg
+#  to:
+#    node : HeadOperator
+#    input : testMsg
+#- from:
+#    node : HeadOperator
+#    output : headOperatorMsg
+#  to:
+#    node : EndOperator
+#    input : headOperatorMsg
+#- from:
+#    node : EndOperator
+#    output : endOperatorMsg
+#  to:
+#    node : testSink
+#    input : endOperatorMsg
+#
+#
+#loops:
+#- ingress: HeadOperator
+#  egress: EndOperator
+#  feedback_port: feedback-AC
+#  port_type: int
+#  is_infinite: false

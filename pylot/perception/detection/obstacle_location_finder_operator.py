@@ -109,13 +109,13 @@ class ObstacleLocationFinderOperator:
         vehicle_transform = _state.point_cloud_msg.point_cloud.transform
         # print("vehicle_transform: {}".format(vehicle_transform))
         camera_setup = _state.obstacles_msg.camera_setup
-        # print("camera_setup: {}".format(camera_setup))
+        # print("obstacle location finder camera_setup: {}".format(camera_setup))
         obstacles_with_location = get_obstacle_locations(
             obstacles_msg.obstacles, depth_msg, vehicle_transform,
             camera_setup)
         # print('@{}, obstacles with location: {}'.format(timestamp,
         #                        obstacles_with_location))
-        return {'ObstaclesMsg': pickle.dumps(ObstaclesMessage(timestamp, obstacles_with_location))}
+        return {'ObstaclesStream': pickle.dumps(ObstaclesMessage(timestamp, obstacles_with_location, camera_setup))}
 
 
 def register():
