@@ -45,7 +45,7 @@ class LinearPredictorOperator(Operator):
         return None
 
     def input_rule(self, _ctx, state, tokens):
-        obstacle_token = tokens.get('ObstacleTrajectoriesMsg')
+        obstacle_token = tokens.get('ObstacleTrackingStream')
 
         if obstacle_token.is_pending():
             obstacle_token.set_action_keep()
@@ -110,7 +110,7 @@ class LinearPredictorOperator(Operator):
                 ObstaclePrediction(obstacle_trajectory,
                                    obstacle_trajectory.obstacle.transform, 1.0,
                                    predictions))
-        return {'linearPredictorMsg': pickle.dumps(PredictionMessage(msg.timestamp, obstacle_predictions_list))}
+        return {'PredictionStream': pickle.dumps(PredictionMessage(msg.timestamp, obstacle_predictions_list))}
 
 
 def register():

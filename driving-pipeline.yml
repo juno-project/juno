@@ -51,18 +51,20 @@ operators:
       - id: ObstaclesMsg
         type: usize
     outputs:
-      - id: ObstaclesWithLocationMsg
+      - id: ObstaclesStream
         type: usize
-#  - id: ObstacleLocationHistoryOperator
-#    uri: file://./pylot/perception/tracking/obstacle_location_history_operator.py
-#    inputs:
-#      - id: ObstaclesMsg
-#        type: usize
-#      - id: carlaLidarDriverMsg
-#        type: usize
-#    outputs:
-#      - id: ObstacleTrajectoriesMsg
-#        type: usize
+  - id: ObstacleLocationHistoryOperator
+    uri: file://./pylot/perception/tracking/obstacle_location_history_operator.py
+    configuration:
+      dynamic_obstacle_distance_threshold: 50
+    inputs:
+      - id: ObstaclesHistoryTrackingStream
+        type: usize
+      - id: carlaLidarDriverMsg
+        type: usize
+    outputs:
+      - id: ObstacleTrackingStream
+        type: usize
 
   - id: ObjectTrackerOperator
     uri: file://./pylot/perception/tracking/object_tracker_operator.py
@@ -75,10 +77,10 @@ operators:
     inputs:
       - id: carlaCameraDriverMsg
         type: usize
-      - id: ObstaclesWithLocationMsg
+      - id: ObstaclesStream
         type: usize
     outputs:
-      - id: ObstaclesMsg
+      - id: ObstaclesHistoryTrackingStream
         type: usize
 #
 #  - id: PIDControlOperator
@@ -133,18 +135,18 @@ operators:
 #       - id: behaviorPlanningMsg
 #         type: usize
 #
-#  - id: linearPredictorOperator
-#    uri: file://./pylot/prediction/linear_predictor_operator.py
-#    configuration:
-#     prediction_radius: 50
-#     prediction_num_past_steps: 10
-#     prediction_num_future_steps: 10
-#    inputs:
-#     - id: ObstacleTrajectoriesMsg
-#       type: usize
-#    outputs:
-#     - id: linearPredictorMsg
-#       type: usize
+  - id: linearPredictorOperator
+    uri: file://./pylot/prediction/linear_predictor_operator.py
+    configuration:
+     prediction_radius: 50
+     prediction_num_past_steps: 10
+     prediction_num_future_steps: 10
+    inputs:
+     - id: ObstacleTrackingStream
+       type: usize
+    outputs:
+     - id: PredictionStream
+       type: usize
 
   - id: carlaOperator
     uri: file://./pylot/simulation/carla_operator.py
@@ -480,13 +482,13 @@ sinks:
 #  - id : ObstacleLocationHistorySink
 #    uri: file://./sinks/obstacle_location_history_sink.py
 #    input:
-#        id: ObstacleTrajectoriesMsg
+#        id: ObstacleTrackingStream
 #        type: usize
-  - id : ObjectTrackerSink
-    uri: file://./sinks/object_tracker_sink.py
-    input:
-        id: ObstaclesMsg
-        type: usize
+#  - id : ObjectTrackerSink
+#    uri: file://./sinks/object_tracker_sink.py
+#    input:
+#        id: ObstaclesHistoryTrackingStream
+#        type: usize
 #  - id : PIDControlSink
 #    uri: file://./sinks/pid_control_sink.py
 #    input:
@@ -503,11 +505,11 @@ sinks:
 #       id: behaviorPlanningMsg
 #       type: usize
 #
-#  - id: linearPredictorSink
-#    uri: file://./sinks/linear_predictor_sink.py
-#    input:
-#       id: linearPredictorMsg
-#       type: usize
+  - id: linearPredictorSink
+    uri: file://./sinks/linear_predictor_sink.py
+    input:
+       id: PredictionStream
+       type: usize
 
 #  - id: carlaSink
 #    uri: file://./sinks/carla_sink.py
@@ -938,37 +940,43 @@ links:
     input : carlaCameraDriverMsg
 - from:
     node : ObstacleLocationFinderOperator
-    output : ObstaclesWithLocationMsg
+    output : ObstaclesStream
   to:
     node : ObjectTrackerOperator
-    input : ObstaclesWithLocationMsg
-- from:
-    node : ObjectTrackerOperator
-    output : ObstaclesMsg
-  to:
-    node : ObjectTrackerSink
-    input : ObstaclesMsg
+    input : ObstaclesStream
 #- from:
 #    node : ObjectTrackerOperator
-#    output : ObstaclesMsg
+#    output : ObstaclesHistoryTrackingStream
 #  to:
-#    node : ObstacleLocationHistoryOperator
-#    input : ObstaclesMsg
+#    node : ObjectTrackerSink
+#    input : ObstaclesHistoryTrackingStream
+- from:
+    node : ObjectTrackerOperator
+    output : ObstaclesHistoryTrackingStream
+  to:
+    node : ObstacleLocationHistoryOperator
+    input : ObstaclesHistoryTrackingStream
+- from:
+    node : carlaLidarDriverOperator
+    output : carlaLidarDriverMsg
+  to:
+    node : ObstacleLocationHistoryOperator
+    input : carlaLidarDriverMsg
 #- from:
-#    node : carlaLidarDriverOperator
-#    output : carlaLidarDriverMsg
-#  to:
 #    node : ObstacleLocationHistoryOperator
-#    input : carlaLidarDriverMsg
-#- from:
-#    node : ObstacleLocationHistoryOperator
-#    output : ObstacleTrajectoriesMsg
+#    output : ObstacleTrackingStream
 #  to:
-#    node : linearPredictorOperator
-#    input : ObstacleTrajectoriesMsg
-#- from:
-#    node : linearPredictorOperator
-#    output : linearPredictorMsg
-#  to:
-#    node : linearPredictorSink
-#    input : linearPredictorMsg
+#    node : ObstacleLocationHistorySink
+#    input : ObstacleTrackingStream
+- from:
+    node : ObstacleLocationHistoryOperator
+    output : ObstacleTrackingStream
+  to:
+    node : linearPredictorOperator
+    input : ObstacleTrackingStream
+- from:
+    node : linearPredictorOperator
+    output : PredictionStream
+  to:
+    node : linearPredictorSink
+    input : PredictionStream
