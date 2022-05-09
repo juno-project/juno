@@ -437,7 +437,7 @@ class CarlaOperator(Operator):
                   "global_trajectory_stream": _state.global_trajectory_stream,
                   "timestamp": _state.msg_timestamp
                   }
-        return {'carlaOperatorMsg': pickle.dumps(result)}
+        return {'carla_stream': pickle.dumps(result)}
 
 
 @total_ordering

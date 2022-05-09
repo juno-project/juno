@@ -122,7 +122,7 @@ class CarlaLidarDriverOperator():
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        token = tokens.get('carlaOperatorMsg').get_data()
+        token = tokens.get('carla_stream').get_data()
         msg = pickle.loads(bytes(token))
 
         state.vehicle_id_msg = msg['vehicle_id_stream']
@@ -214,7 +214,7 @@ class CarlaLidarDriverOperator():
                   "notify_reading_stream": _state._notify_reading_stream,
                   "timestamp": _state.msg_timestamp
                   }
-        return {'carlaLidarDriverMsg': pickle.dumps(result)}
+        return {'point_cloud_stream': pickle.dumps(result)}
 
 
 def register():

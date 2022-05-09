@@ -81,7 +81,7 @@ class CarlaGNSSDriverOperator():
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        token = tokens.get('carlaOperatorMsg').get_data()
+        token = tokens.get('carla_stream').get_data()
         msg = pickle.loads(bytes(token))
 
         state.vehicle_id_msg = msg['vehicle_id_stream']
@@ -151,7 +151,7 @@ class CarlaGNSSDriverOperator():
         result = {"gnss_stream": _state._gnss_stream,
                   "timestamp": _state.msg_timestamp
                   }
-        return {'carlaGnssDriverMsg': pickle.dumps(result)}
+        return {'gnss_stream': pickle.dumps(result)}
 
 
 

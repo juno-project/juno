@@ -6,6 +6,7 @@ import erdos
 from pylot.perception.detection.utils import get_obstacle_locations
 from pylot.perception.messages import ObstaclesMessage
 import tensorflow as tf
+from zenoh_flow import Inputs, Operator, Outputs
 
 """Computes the world location of the obstacle.
 
@@ -67,7 +68,7 @@ class ObstacleLocationFinderState:
         self.cfg = cfg
 
 
-class ObstacleLocationFinderOperator:
+class ObstacleLocationFinderOperator(Operator):
 
     def initialize(self, configuration):
         return ObstacleLocationFinderState(configuration)
@@ -76,8 +77,8 @@ class ObstacleLocationFinderOperator:
         return None
 
     def input_rule(self, _ctx, state, tokens):
-        obstacle_token = tokens.get('ObstaclesMsg')
-        lidar_token = tokens.get('carlaLidarDriverMsg')
+        obstacle_token = tokens.get('obstacles_stream_wo_depth')
+        lidar_token = tokens.get('point_cloud_stream')
 
         if obstacle_token.is_pending():
             obstacle_token.set_action_keep()
@@ -115,7 +116,7 @@ class ObstacleLocationFinderOperator:
             camera_setup)
         # print('@{}, obstacles with location: {}'.format(timestamp,
         #                        obstacles_with_location))
-        return {'ObstaclesStream': pickle.dumps(ObstaclesMessage(timestamp, obstacles_with_location, camera_setup))}
+        return {'obstacles_stream': pickle.dumps(ObstaclesMessage(timestamp, obstacles_with_location, camera_setup))}
 
 
 def register():

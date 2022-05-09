@@ -23,8 +23,8 @@ class ObstacleLocationHistoryOperator:
         return None
 
     def input_rule(self, _ctx, state, tokens):
-        obstacle_token = tokens.get('ObstaclesHistoryTrackingStream')
-        lidar_token = tokens.get('carlaLidarDriverMsg')
+        obstacle_token = tokens.get('obstacles_wo_history_tracking_stream')
+        lidar_token = tokens.get('point_cloud_stream')
 
         if obstacle_token.is_pending():
             obstacle_token.set_action_keep()
@@ -95,7 +95,7 @@ class ObstacleLocationHistoryOperator:
                 "[{:.4f} {:.4f} {:.4f}]".format(x, y, z)))
 
         return {
-            'ObstacleTrackingStream': pickle.dumps(ObstacleTrajectoriesMessage(timestamp, obstacle_trajectories))}
+            'obstacles_tracking_stream': pickle.dumps(ObstacleTrajectoriesMessage(timestamp, obstacle_trajectories))}
 
 
 def register():

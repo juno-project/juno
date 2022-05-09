@@ -10,10 +10,10 @@ operators:
       log_detector_output: true
       out_path: ./out_data/
     inputs:
-      - id: carlaCameraDriverMsg
+      - id: center_camera_stream
         type: usize
     outputs:
-      - id: ObstaclesMsg
+      - id: obstacles_stream_wo_depth
         type: usize
   - id : TrafficLightDetOperator
     uri: file://./pylot/perception/detection/traffic_light_det_operator.py
@@ -24,46 +24,46 @@ operators:
        log_traffic_light_detector_output: true
        out_path: ./out_data/
     inputs:
-       - id: carlaCameraDriverMsg
+       - id: center_camera_stream
          type: usize
     outputs:
-       - id: TrafficLightsMsg
+       - id: traffic_lights_stream
          type: usize
   - id: LocalizationOperator
     uri: file://./pylot/localization/localization_operator.py
     configuration:
       log_file_name: pylot.log
     inputs:
-       - id: carlaOperatorMsg
+       - id: carla_stream
          type: usize
-       - id: carlaImuDriverMsg
+       - id: imu_stream
          type: usize
-       - id: carlaGnssDriverMsg
+       - id: gnss_stream
          type: usize
     outputs:
-       - id: localizationMsg
+       - id: pose_stream
          type: usize
   - id: ObstacleLocationFinderOperator
     uri: file://./pylot/perception/detection/obstacle_location_finder_operator.py
     inputs:
-      - id: carlaLidarDriverMsg
+      - id: point_cloud_stream
         type: usize
-      - id: ObstaclesMsg
+      - id: obstacles_stream_wo_depth
         type: usize
     outputs:
-      - id: ObstaclesMsg
+      - id: obstacles_stream
         type: usize
   - id: ObstacleLocationHistoryOperator
     uri: file://./pylot/perception/tracking/obstacle_location_history_operator.py
     configuration:
       dynamic_obstacle_distance_threshold: 50
     inputs:
-      - id: ObstaclesHistoryTrackingMsg
+      - id: obstacles_wo_history_tracking_stream
         type: usize
-      - id: carlaLidarDriverMsg
+      - id: point_cloud_stream
         type: usize
     outputs:
-      - id: ObstacleTrackingMsg
+      - id: obstacles_tracking_stream
         type: usize
 
   - id: ObjectTrackerOperator
@@ -75,12 +75,12 @@ operators:
       da_siam_rpn_model_path: dependencies/models/tracking/DASiamRPN/SiamRPNVOT.model
       deep_sort_tracker_weights_path: dependencies/models/tracking/deep-sort-carla/feature_extractor
     inputs:
-      - id: carlaCameraDriverMsg
+      - id: center_camera_stream
         type: usize
-      - id: ObstaclesMsg
+      - id: obstacles_stream
         type: usize
     outputs:
-      - id: ObstaclesHistoryTrackingMsg
+      - id: obstacles_wo_history_tracking_stream
         type: usize
 
 #  - id: PIDControlOperator
@@ -104,20 +104,20 @@ operators:
 #      - id: ControlMsg
 #        type: usize
 
-#  - id: LanenetDetectionOperator
-#    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
-#    configuration:
-#      out_path: ./out_data/
-#      log_file_name: pylot.log
-#      lane_detection_gpu_index: 0
-#      lane_detection_gpu_memory_fraction: 3
-#      lanenet_detection_model_path:  /dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
-#    inputs:
-#      - id: carlaCameraDriverMsg
-#        type: usize
-#    outputs:
-#      - id: LanesMsg
-#        type: usize
+  - id: LanenetDetectionOperator
+    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
+    configuration:
+      out_path: ./out_data/
+      log_file_name: pylot.log
+      lane_detection_gpu_index: 0
+      lane_detection_gpu_memory_fraction: 3
+      lanenet_detection_model_path:  /dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
+    inputs:
+      - id: center_camera_stream
+        type: usize
+    outputs:
+      - id: lane_detection_stream
+        type: usize
 
   - id: BehaviorPlanningOperator
     uri: file://./pylot/planning/behavior_planning_operator.py
@@ -127,12 +127,12 @@ operators:
        goal_location_z: 39
        log_file_name: pylot.log
     inputs:
-       - id:  carlaOperatorMsg
+       - id:  carla_stream
          type: usize
-       - id:  localizationMsg
+       - id:  pose_stream
          type: usize
     outputs:
-       - id: TrajectoryMsg
+       - id: trajectory_stream
          type: usize
 
   - id: linearPredictorOperator
@@ -142,10 +142,10 @@ operators:
      prediction_num_past_steps: 10
      prediction_num_future_steps: 10
     inputs:
-     - id: ObstacleTrackingMsg
+     - id: obstacles_tracking_stream
        type: usize
     outputs:
-     - id: PredictionMsg
+     - id: prediction_stream
        type: usize
 
   - id: carlaOperator
@@ -176,7 +176,7 @@ operators:
      - id: carlaMsg
        type: usize
     outputs:
-     - id: carlaOperatorMsg
+     - id: carla_stream
        type: usize
 
   - id: carlaCameraDriverOperator
@@ -196,10 +196,10 @@ operators:
       simulator_mode: 'synchronous'
       simulator_fps: 2
     inputs:
-     - id: carlaOperatorMsg
+     - id: carla_stream
        type: usize
     outputs:
-     - id: carlaCameraDriverMsg
+     - id: center_camera_stream
        type: usize
 
   - id: carlaLidarDriverOperator
@@ -220,10 +220,10 @@ operators:
       simulator_fps: 20
       simulator_lidar_frequency: 1
     inputs:
-     - id: carlaOperatorMsg
+     - id: carla_stream
        type: usize
     outputs:
-     - id: carlaLidarDriverMsg
+     - id: point_cloud_stream
        type: usize
 
   - id: carlaImuDriverOperator
@@ -244,10 +244,10 @@ operators:
       gyro_noise_stddev_z: 0.0
       simulator_imu_frequency: 1
     inputs:
-     - id: carlaOperatorMsg
+     - id: carla_stream
        type: usize
     outputs:
-     - id: carlaImuDriverMsg
+     - id: imu_stream
        type: usize
 
   - id: carlaGnssDriverOperator
@@ -268,10 +268,10 @@ operators:
       gnss_bias_lon: 0.0
       simulator_gnss_frequency: 10
     inputs:
-     - id: carlaOperatorMsg
+     - id: carla_stream
        type: usize
     outputs:
-     - id: carlaGnssDriverMsg
+     - id: gnss_stream
        type: usize
 
   - id: PlanningOperator
@@ -340,20 +340,20 @@ operators:
       simulator_timeout: 10
       target_speed: 10
     inputs:
-      - id: localizationMsg
+      - id: pose_stream
         type: usize
-      - id: TrajectoryMsg
+      - id: trajectory_stream
         type: usize
-      - id: TrafficLightsMsg
+      - id: traffic_lights_stream
         type: usize
-#      - id: LanesMsg
-#        type: usize
-      - id: PredictionMsg
+      - id: lane_detection_stream
         type: usize
-      - id: carlaOperatorMsg
+      - id: prediction_stream
+        type: usize
+      - id: carla_stream
         type: usize
     outputs:
-      - id: WaypointsMsg
+      - id: waypoints_stream
         type: usize
 
 sources:
@@ -376,7 +376,7 @@ sinks:
   - id : PlanningSink
     uri: file://./sinks/planning_sink.py
     input:
-        id: WaypointsMsg
+        id: waypoints_stream
         type: usize
 
 links:
@@ -391,178 +391,181 @@ links:
     input : carlaMsg
 - from:
     node : carlaOperator
-    output : carlaOperatorMsg
+    output : carla_stream
   to:
     node : carlaImuDriverOperator
-    input : carlaOperatorMsg
+    input : carla_stream
 - from:
     node : carlaImuDriverOperator
-    output : carlaImuDriverMsg
+    output : imu_stream
   to:
     node : LocalizationOperator
-    input : carlaImuDriverMsg
+    input : imu_stream
 
 - from:
     node : carlaOperator
-    output : carlaOperatorMsg
+    output : carla_stream
   to:
     node : carlaGnssDriverOperator
-    input : carlaOperatorMsg
+    input : carla_stream
 - from:
     node : carlaGnssDriverOperator
-    output : carlaGnssDriverMsg
+    output : gnss_stream
   to:
     node : LocalizationOperator
-    input : carlaGnssDriverMsg
+    input : gnss_stream
 
 - from:
     node : carlaOperator
-    output : carlaOperatorMsg
+    output : carla_stream
   to:
     node : LocalizationOperator
-    input : carlaOperatorMsg
+    input : carla_stream
 
 - from:
     node : LocalizationOperator
-    output : localizationMsg
+    output : pose_stream
   to:
     node : PlanningOperator
-    input : localizationMsg
+    input : pose_stream
 
 
 # links-1
 - from:
     node : carlaOperator
-    output : carlaOperatorMsg
+    output : carla_stream
   to:
     node : BehaviorPlanningOperator
-    input : carlaOperatorMsg
+    input : carla_stream
 - from:
     node : LocalizationOperator
-    output : localizationMsg
+    output : pose_stream
   to:
     node : BehaviorPlanningOperator
-    input : localizationMsg
+    input : pose_stream
 - from:
     node : BehaviorPlanningOperator
-    output : TrajectoryMsg
+    output : trajectory_stream
   to:
     node : PlanningOperator
-    input : TrajectoryMsg
+    input : trajectory_stream
 
 # links-2
 - from:
     node : carlaOperator
-    output : carlaOperatorMsg
+    output : carla_stream
   to:
     node : carlaCameraDriverOperator
-    input : carlaOperatorMsg
+    input : carla_stream
 
 # links-3
 - from:
     node : carlaCameraDriverOperator
-    output : carlaCameraDriverMsg
+    output : center_camera_stream
   to:
     node : TrafficLightDetOperator
-    input : carlaCameraDriverMsg
+    input : center_camera_stream
 - from:
     node : TrafficLightDetOperator
-    output : TrafficLightsMsg
+    output : traffic_lights_stream
   to:
     node : PlanningOperator
-    input : TrafficLightsMsg
+    input : traffic_lights_stream
 
 
 # links-4
 
-#- from:
-#    node : carlaCameraDriverOperator
-#    output : carlaCameraDriverMsg
-#  to:
-#    node : LanenetDetectionOperator
-#    input : carlaCameraDriverMsg
-#- from:
-#    node : LanenetDetectionOperator
-#    output : LanesMsg
-#  to:
-#    node : PlanningOperator
-#    input : LanesMsg
+- from:
+    node : carlaCameraDriverOperator
+    output : center_camera_stream
+  to:
+    node : LanenetDetectionOperator
+    input : center_camera_stream
+- from:
+    node : LanenetDetectionOperator
+    output : lane_detection_stream
+  to:
+    node : PlanningOperator
+    input : lane_detection_stream
 
 # links-5
 - from:
     node : carlaOperator
-    output : carlaOperatorMsg
+    output : carla_stream
   to:
     node : carlaLidarDriverOperator
-    input : carlaOperatorMsg
+    input : carla_stream
 
 # links-6
 - from:
     node : carlaCameraDriverOperator
-    output : carlaCameraDriverMsg
+    output : center_camera_stream
   to:
     node : DetectionOperator
-    input : carlaCameraDriverMsg
+    input : center_camera_stream
 - from:
     node : DetectionOperator
-    output : ObstaclesMsg
+    output : obstacles_stream_wo_depth
   to:
     node : ObstacleLocationFinderOperator
-    input : ObstaclesMsg
+    input : obstacles_stream_wo_depth
 - from:
     node : carlaLidarDriverOperator
-    output : carlaLidarDriverMsg
+    output : point_cloud_stream
   to:
     node : ObstacleLocationFinderOperator
-    input : carlaLidarDriverMsg
+    input : point_cloud_stream
+
 - from:
     node : carlaCameraDriverOperator
-    output : carlaCameraDriverMsg
+    output : center_camera_stream
   to:
     node : ObjectTrackerOperator
-    input : carlaCameraDriverMsg
+    input : center_camera_stream
 - from:
     node : ObstacleLocationFinderOperator
-    output : ObstaclesMsg
+    output : obstacles_stream
   to:
     node : ObjectTrackerOperator
-    input : ObstaclesMsg
+    input : obstacles_stream
+
 - from:
     node : ObjectTrackerOperator
-    output : ObstaclesHistoryTrackingMsg
+    output : obstacles_wo_history_tracking_stream
   to:
     node : ObstacleLocationHistoryOperator
-    input : ObstaclesHistoryTrackingMsg
+    input : obstacles_wo_history_tracking_stream
 - from:
     node : carlaLidarDriverOperator
-    output : carlaLidarDriverMsg
+    output : point_cloud_stream
   to:
     node : ObstacleLocationHistoryOperator
-    input : carlaLidarDriverMsg
+    input : point_cloud_stream
+
 - from:
     node : ObstacleLocationHistoryOperator
-    output : ObstacleTrackingMsg
+    output : obstacles_tracking_stream
   to:
     node : linearPredictorOperator
-    input : ObstacleTrackingMsg
+    input : obstacles_tracking_stream
 - from:
     node : linearPredictorOperator
-    output : PredictionMsg
+    output : prediction_stream
   to:
     node : PlanningOperator
-    input : PredictionMsg
+    input : prediction_stream
 - from:
     node : carlaOperator
-    output : carlaOperatorMsg
+    output : carla_stream
   to:
     node : PlanningOperator
-    input : carlaOperatorMsg
+    input : carla_stream
 - from:
     node : PlanningOperator
-    output : WaypointsMsg
+    output : waypoints_stream
   to:
     node : PlanningSink
-    input : WaypointsMsg
+    input : waypoints_stream
 #- from:
 #    node : PlanningOperator
 #    output : WaypointsMsg

@@ -158,7 +158,7 @@ class CarlaCameraDriverOperator(Operator):
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        token = tokens.get('carlaOperatorMsg').get_data()
+        token = tokens.get('carla_stream').get_data()
         msg = pickle.loads(bytes(token))
 
         state.vehicle_id_msg = msg['vehicle_id_stream']
@@ -228,7 +228,7 @@ class CarlaCameraDriverOperator(Operator):
                   "timestamp": _state.msg_timestamp
                   }
 
-        return {'carlaCameraDriverMsg': pickle.dumps(result)}
+        return {'center_camera_stream': pickle.dumps(result)}
 
 
 def register():
