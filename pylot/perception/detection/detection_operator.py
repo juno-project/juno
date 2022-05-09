@@ -32,7 +32,7 @@ class DetectionState:
         # Unique bounding box id. Incremented for each bounding box.
         self._unique_id = 0
 
-    def run_model(self, image_np):
+    def run_model1(self, image_np):
         # Expand dimensions since the model expects images to have
         # shape: [1, None, None, 3]
         image_np_expanded = np.expand_dims(image_np, axis=0)
@@ -45,6 +45,7 @@ class DetectionState:
         classes = result['classes']
         num_detections = result['detections']
 
+        print("detection operator -------->  num_detections : {}".format(num_detections))
         num_detections = int(num_detections[0])
         res_classes = [int(cls) for cls in classes[0][:num_detections]]
         res_boxes = boxes[0][:num_detections]
@@ -64,7 +65,7 @@ class DetectionOperator():
         return DetectionState(configuration)
 
     def input_rule(self, _ctx, state, tokens):
-        token = tokens.get('carlaCameraDriverMsg')
+        token = tokens.get('center_camera_stream')
         msg = pickle.loads(bytes(token.get_data()))
         print("carlaCameraDriverMsg: {}".format(msg))
         if msg['camera_stream'] == None:
@@ -86,7 +87,7 @@ class DetectionOperator():
         start_time = time.time()
         # The models expect BGR images.
         assert msg.frame.encoding == 'BGR', 'Expects BGR frames'
-        num_detections, res_boxes, res_scores, res_classes = _state.run_model(
+        num_detections, res_boxes, res_scores, res_classes = _state.run_model1(
             msg.frame.frame)
         obstacles = []
         for i in range(0, num_detections):
@@ -130,7 +131,9 @@ class DetectionOperator():
                            'detector-{}'.format('DetectionOperator'))
 
         camera_setup = msg.frame.camera_setup
-        return {'ObstaclesMsg': pickle.dumps(ObstaclesMessage(msg.timestamp, obstacles, camera_setup, runtime))}
+
+        print("obstacles_stream_wo_depth--------------------： {}".format(ObstaclesMessage(msg.timestamp, obstacles, camera_setup, runtime)))
+        return {'obstacles_stream_wo_depth': pickle.dumps(ObstaclesMessage(msg.timestamp, obstacles, camera_setup, runtime))}
 
 
 def register():

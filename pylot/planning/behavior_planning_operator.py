@@ -204,8 +204,8 @@ class BehaviorPlanningOperator(Operator):
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
 
-        carla_token = tokens.get("carlaOperatorMsg")
-        localization_token = tokens.get("localizationMsg")
+        carla_token = tokens.get("carla_stream")
+        localization_token = tokens.get("pose_stream")
 
         if carla_token.is_pending():
             carla_token.set_action_keep()
@@ -312,7 +312,7 @@ class BehaviorPlanningOperator(Operator):
             state.trajectory_stream = pickle.dumps(WaypointsMessage(timestamp, None, state._state))
             # return {"behaviorPlanningMsg": pickle.dumps(WaypointsMessage(timestamp, None, state._state))}
 
-        return {"behaviorPlanningMsg": state.trajectory_stream}
+        return {"trajectory_stream": state.trajectory_stream}
 
 
 

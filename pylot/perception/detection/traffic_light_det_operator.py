@@ -51,6 +51,7 @@ class TrafficLightDetState:
         classes = result['classes']
         num_detections = result['detections']
 
+        print("traffic_light operator -------->  num_detections : {}".format(num_detections))
         num_detections = int(num_detections[0])
         res_labels = [
             self._labels[int(label)] for label in classes[0][:num_detections]
@@ -89,7 +90,7 @@ class TrafficLightDetOperator(Operator):
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        token = tokens.get('carlaCameraDriverMsg')
+        token = tokens.get('center_camera_stream')
         msg = pickle.loads(bytes(token.get_data()))
         if msg['camera_stream'] == None:
             token.set_action_drop()
@@ -135,7 +136,7 @@ class TrafficLightDetOperator(Operator):
             msg.frame.save(msg.timestamp, _state.cfg['out_path'],
                            'tl-detector-{}'.format('TrafficLightDetOperator'))
 
-        return {"TrafficLightsMsg": pickle.dumps(TrafficLightsMessage(msg.timestamp, traffic_lights))}
+        return {"traffic_lights_stream": pickle.dumps(TrafficLightsMessage(msg.timestamp, traffic_lights))}
 
 def register():
     return TrafficLightDetOperator

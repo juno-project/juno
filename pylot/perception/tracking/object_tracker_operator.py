@@ -37,8 +37,8 @@ class ObjectTrackerOperator:
         return None
 
     def input_rule(self, _ctx, state, tokens):
-        obstacle_token = tokens.get('ObstaclesStream')
-        camera_token = tokens.get('carlaCameraDriverMsg')
+        obstacle_token = tokens.get('obstacles_stream')
+        camera_token = tokens.get('center_camera_stream')
         if camera_token.is_pending():
             camera_token.set_action_keep()
             return False
@@ -97,8 +97,7 @@ class ObjectTrackerOperator:
                                                      detector_runtime,
                                                      tracker_runtime,
                                                      _state)
-        print("object tracker output obstacles: {}".format(tracked_obstacles))
-        return {'ObstaclesHistoryTrackingStream': pickle.dumps(ObstaclesMessage(timestamp, tracked_obstacles, camera_setup, tracker_delay))}
+        return {'obstacles_wo_history_tracking_stream': pickle.dumps(ObstaclesMessage(timestamp, tracked_obstacles, camera_setup, tracker_delay))}
 
     @staticmethod
     def __compute_tracker_delay(world_time, detector_runtime,

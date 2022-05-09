@@ -13,7 +13,7 @@ from pylot.prediction.obstacle_prediction import ObstaclePrediction
 from pylot.simulation.utils import map_from_opendrive
 from pylot.map.hd_map import HDMap
 from pylot.simulation.utils import get_map
-
+from zenoh_flow import Inputs, Operator, Outputs
 
 class PlanningState:
     def __init__(self, cfg):
@@ -121,7 +121,7 @@ class PlanningState:
         print('Planner running in stand-alone mode')
 
 
-class PlanningOperator:
+class PlanningOperator(Operator):
     def initialize(self, configuration):
         print("operator initializing")
         return PlanningState(configuration)
@@ -131,66 +131,108 @@ class PlanningOperator:
         return None
 
     def input_rule(self, _ctx, state, tokens):
-        token = tokens.get("PlanningMsg")
-        msg = pickle.loads(bytes(token.get_data()))
-        print("msg from token: {}".format(msg))
-        if msg == None: 
-            token.set_action_drop()
-            return False
-        state.msg = msg
+        print("PlanningOperator  input_rule  -------------------------start ")
+        # token = tokens.get("PlanningMsg")
+        # msg = pickle.loads(bytes(token.get_data()))
+        # print("msg from token: {}".format(msg))
+        # if msg == None:
+        #     token.set_action_drop()
+        #     return False
+        # state.msg = msg
+
+        # - id: localizationMsg
+        # - id: TrajectoryMsg
+        # - id: TrafficLightsMsg
+        # - id: LanesMsg
+        # - id: PredictionMsg
+        # - id: carlaOperatorMsg
+
+        localization_token = tokens.get("pose_stream")
+        trajectory_token = tokens.get("trajectory_stream")
+        trafficLights_token = tokens.get("traffic_lights_stream")
+        lanes_token = tokens.get("lane_detection_stream")
+        prediction_token = tokens.get("prediction_stream")
+        carla_token = tokens.get("carla_stream")
+
+        if not localization_token.is_pending() :
+            localization_msg = pickle.loads(bytes(localization_token.get_data()))
+            # print("planning------------------------------  localization_msg : {}".format(localization_msg))
+
+        if not trajectory_token.is_pending() :
+            trajectory_msg = pickle.loads(bytes(trajectory_token.get_data()))
+            # print("planning------------------------------   rajectory_msg : {}".format(trajectory_msg))
+
+        if not trafficLights_token.is_pending() :
+            trafficLights_msg = pickle.loads(bytes(trafficLights_token.get_data()))
+            print("planning------------------------------  trafficLights_msg : {}".format(trafficLights_msg))
+
+        if not lanes_token.is_pending() :
+            lanes_msg = pickle.loads(bytes(lanes_token.get_data()))
+            print("planning------------------------------  lanes_msg : {}".format(lanes_msg))
+
+        if not prediction_token.is_pending() :
+            prediction_msg = pickle.loads(bytes(prediction_token.get_data()))
+            # print("planning------------------------------  prediction_msg : {}".format(prediction_msg))
+
+        if not carla_token.is_pending() :
+            carla_msg = pickle.loads(bytes(carla_token.get_data()))
+            # print("planning------------------------------   carla_msg : {}".format(carla_msg))
+
+        print("PlanningOperator  input_rule  ------------------------- end")
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
-        print("output")
         return outputs
 
     def run(self, _ctx, _state, inputs):
-        msg = _state.msg
-        timestamp = msg[0]
-        lane_msg = msg[1]
-        linear_prediction_msg = msg[2]
-        open_drive_msg = msg[3]
-        trajectory_msg = msg[4]
-        vehicle_transform = msg[5]
-        traffic_light_msg = TrafficLightsMessage(timestamp, [])
-        print('@{}: received watermark'.format(timestamp))
+        return {'waypoints_stream': pickle.dumps(None)}
 
-        if trajectory_msg.agent_state:
-            print('@{}: updating planner state to {}'.format(
-                timestamp, trajectory_msg.agent_state))
-            _state._state = trajectory_msg.agent_state
-        if trajectory_msg.waypoints:
-            print('@{}: route has {} waypoints'.format(
-                timestamp, len(trajectory_msg.waypoints.waypoints)))
-            # The last waypoint is the goal location.
-            _state._world.update_waypoints(trajectory_msg.waypoints.waypoints[-1].location,
-                                           trajectory_msg.waypoints)
-
-        _state._map = map_from_opendrive(open_drive_msg.data)
-
-        self.update_world(self, timestamp, vehicle_transform,
-                          linear_prediction_msg, lane_msg, traffic_light_msg, _state._world, _state._map)
-        # Total ttd - time spent up to now
-        ttd = 0
-        # if self._state == BehaviorPlannerState.OVERTAKE:
-        #     # Ignore traffic lights and obstacle.
-        #     output_wps = self._planner.run(timestamp, ttd)
+        # msg = _state.msg
+        # timestamp = msg[0]
+        # lane_msg = msg[1]
+        # linear_prediction_msg = msg[2]
+        # open_drive_msg = msg[3]
+        # trajectory_msg = msg[4]
+        # vehicle_transform = msg[5]
+        # traffic_light_msg = TrafficLightsMessage(timestamp, [])
+        # print('@{}: received watermark'.format(timestamp))
+        #
+        # if trajectory_msg.agent_state:
+        #     print('@{}: updating planner state to {}'.format(
+        #         timestamp, trajectory_msg.agent_state))
+        #     _state._state = trajectory_msg.agent_state
+        # if trajectory_msg.waypoints:
+        #     print('@{}: route has {} waypoints'.format(
+        #         timestamp, len(trajectory_msg.waypoints.waypoints)))
+        #     # The last waypoint is the goal location.
+        #     _state._world.update_waypoints(trajectory_msg.waypoints.waypoints[-1].location,
+        #                                    trajectory_msg.waypoints)
+        #
+        # _state._map = map_from_opendrive(open_drive_msg.data)
+        #
+        # self.update_world(self, timestamp, vehicle_transform,
+        #                   linear_prediction_msg, lane_msg, traffic_light_msg, _state._world, _state._map)
+        # # Total ttd - time spent up to now
+        # ttd = 0
+        # # if self._state == BehaviorPlannerState.OVERTAKE:
+        # #     # Ignore traffic lights and obstacle.
+        # #     output_wps = self._planner.run(timestamp, ttd)
+        # # else:
+        # (speed_factor, _, _, speed_factor_tl,
+        #  speed_factor_stop) = _state._world.stop_for_agents(timestamp)
+        # if _state.planning_type == 'waypoint':
+        #     target_speed = speed_factor * _state.target_speed
+        #     print(
+        #         '@{}: speed factor: {}, target speed: {}'.format(
+        #             timestamp, speed_factor, target_speed))
+        #     output_wps = _state._world.follow_waypoints(target_speed)
         # else:
-        (speed_factor, _, _, speed_factor_tl,
-         speed_factor_stop) = _state._world.stop_for_agents(timestamp)
-        if _state.planning_type == 'waypoint':
-            target_speed = speed_factor * _state.target_speed
-            print(
-                '@{}: speed factor: {}, target speed: {}'.format(
-                    timestamp, speed_factor, target_speed))
-            output_wps = _state._world.follow_waypoints(target_speed)
-        else:
-            output_wps = _state._planner.run(timestamp, ttd)
-            speed_factor = min(speed_factor_stop, speed_factor_tl)
-            print('@{}: speed factor: {}'.format(
-                timestamp, speed_factor))
-            output_wps.apply_speed_factor(speed_factor)
-        return {'WaypointsMsg': pickle.dumps(WaypointsMessage(timestamp, output_wps))}
+        #     output_wps = _state._planner.run(timestamp, ttd)
+        #     speed_factor = min(speed_factor_stop, speed_factor_tl)
+        #     print('@{}: speed factor: {}'.format(
+        #         timestamp, speed_factor))
+        #     output_wps.apply_speed_factor(speed_factor)
+        # return {'waypoints_stream': pickle.dumps(WaypointsMessage(timestamp, output_wps))}
 
     def get_predictions(self, prediction_msg, ego_transform):
         """Extracts obstacle predictions out of the message.

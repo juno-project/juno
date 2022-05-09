@@ -92,7 +92,7 @@ class CarlaIMUDriverOperator():
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        token = tokens.get('carlaOperatorMsg').get_data()
+        token = tokens.get('carla_stream').get_data()
         msg = pickle.loads(bytes(token))
 
         state.vehicle_id_msg = msg['vehicle_id_stream']
@@ -166,7 +166,7 @@ class CarlaIMUDriverOperator():
         result = {"imu_stream": _state._imu_stream,
                   "timestamp": _state.msg_timestamp
                   }
-        return {'carlaImuDriverMsg': pickle.dumps(result)}
+        return {'imu_stream': pickle.dumps(result)}
 
 
 def register():

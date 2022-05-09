@@ -119,9 +119,9 @@ class LocalizationOperator(Operator):
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        imu_token = tokens.get("carlaImuDriverMsg")
-        gnss_token = tokens.get("carlaGnssDriverMsg")
-        carla_token = tokens.get("carlaOperatorMsg")
+        imu_token = tokens.get("imu_stream")
+        gnss_token = tokens.get("gnss_stream")
+        carla_token = tokens.get("carla_stream")
 
         # print("-------------------------------------------------------------")
         # print(" imu_token.is_pending() : {}".format(imu_token.is_pending()))
@@ -256,7 +256,7 @@ class LocalizationOperator(Operator):
             _state._last_timestamp = current_ts
             _state._last_pose_estimate = current_pose
 
-        return {'localizationMsg': pickle.dumps(PoseMessage(_state._last_timestamp, _state._last_pose_estimate))}
+        return {'pose_stream': pickle.dumps(PoseMessage(_state._last_timestamp, _state._last_pose_estimate))}
 
 
 def register():

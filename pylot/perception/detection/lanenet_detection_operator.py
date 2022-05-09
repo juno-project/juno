@@ -89,7 +89,7 @@ class LanenetDetectionOperator():
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
         # Using input rules
-        token = tokens.get('carlaCameraDriverMsg')
+        token = tokens.get('center_camera_stream')
         msg = pickle.loads(bytes(token.get_data()))
         if msg['camera_stream'] == None:
             token.set_action_drop()
@@ -192,7 +192,7 @@ class LanenetDetectionOperator():
         msg.frame.save(msg.timestamp, _state.cfg['out_path'],
                                        'tl-detector-{}'.format('LanenetDetectionOperator'))
 
-        return {'LanesMessage': pickle.dumps(LanesMessage(msg.timestamp, detected_lanes))}
+        return {'lane_detection_stream': pickle.dumps(LanesMessage(msg.timestamp, detected_lanes))}
         # return {"LanesMessage": pickle.dumps(msg)}
         # plt.figure('binary_image')
         # plt.imshow(binary_seg_image[0] * 255, cmap='gray')
