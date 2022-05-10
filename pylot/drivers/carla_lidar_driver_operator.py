@@ -126,10 +126,8 @@ class CarlaLidarDriverOperator():
         msg = pickle.loads(bytes(token))
 
         state.vehicle_id_msg = msg['vehicle_id_stream']
-        print(state.vehicle_id_msg)
         timestamp = msg['timestamp']
         state.release_data(timestamp)
-
         # state.vehicle_id_msg = pickle.load(
         #     open("/home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaCameraDriverOperator/input/vehicle_id_msg.pkl",
         #          "rb"))
@@ -161,7 +159,7 @@ class CarlaLidarDriverOperator():
         simulator_version = client.get_client_version()
         set_simulation_mode(world, _state.cfg)
 
-        self._vehicle = get_vehicle_handle(world, vehicle_id)
+        self._vehicle = get_vehicle_handle(world, vehicle_id, "lidar_operator")
 
         if check_simulator_version(simulator_version,
                                    required_minor=9,

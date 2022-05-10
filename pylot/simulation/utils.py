@@ -4,6 +4,7 @@ import time
 from enum import Enum
 
 import pylot.utils
+from pylot import constant
 from pylot.perception.depth_frame import DepthFrame
 from pylot.perception.detection.obstacle import Obstacle
 from pylot.perception.detection.speed_limit_sign import SpeedLimitSign
@@ -571,10 +572,11 @@ def get_detected_traffic_stops(traffic_stops, depth_frame):
     return det_stop_signs
 
 
-def get_vehicle_handle(world, vehicle_id: int):
+def get_vehicle_handle(world, vehicle_id: int , operator_name = ""):
+    time.sleep(10)
     num_tries = 0
     while num_tries < 50:
-        vehicle = world.get_actors().find(vehicle_id)
+        vehicle = constant.world.get_actors().find(vehicle_id)
         if vehicle:
             return vehicle
         time.sleep(0.5)

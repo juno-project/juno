@@ -85,7 +85,6 @@ class CarlaGNSSDriverOperator():
         msg = pickle.loads(bytes(token))
 
         state.vehicle_id_msg = msg['vehicle_id_stream']
-
         # state.vehicle_id_msg = pickle.load(
         #     open("/home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaCameraDriverOperator/input/vehicle_id_msg.pkl",
         #          "rb"))
@@ -115,7 +114,7 @@ class CarlaGNSSDriverOperator():
         set_simulation_mode(world, _state.cfg)
 
         # Retrieve the vehicle and install the GNSS sensor.
-        _state._vehicle = get_vehicle_handle(world, vehicle_id)
+        _state._vehicle = get_vehicle_handle(world, vehicle_id, "gnss_operator")
         gnss_blueprint = world.get_blueprint_library().find(
             'sensor.other.gnss')
 

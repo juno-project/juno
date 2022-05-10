@@ -90,7 +90,7 @@ class LocalizationState:
 
     def buffer_msg(self, msg, msg_type: str, queue: deque):
         """Callback which buffers the received message."""
-        print("@{}: received {} message.".format(
+        self._logger.debug("@{}: received {} message.".format(
             msg.timestamp, msg_type))
         queue.append(msg)
 
@@ -228,8 +228,7 @@ class LocalizationOperator(Operator):
                     (3, 1)))) * delta_t
 
             # Fix estimates using GNSS
-
-            print("gnss_stream----- latitude:{},longitude:{}, altitude:{}".format(gnss_msg.latitude, gnss_msg.longitude, gnss_msg.altitude))
+            # print("Location type---------------> {}".format(dir(Location)))
             gnss_reading = Location.from_gps(
                 gnss_msg.latitude, gnss_msg.longitude,
                 gnss_msg.altitude).as_numpy_array()

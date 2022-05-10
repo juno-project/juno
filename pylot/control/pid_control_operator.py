@@ -2,20 +2,20 @@ import pickle
 
 import pylot.control.utils
 import pylot.planning.utils
+import pylot.utils
 from pylot.control.messages import ControlMessage
 from pylot.control.pid import PIDLongitudinalController
 
 
 class PIDControlState:
     def __init__(self, cfg):
-        print("operator state initializing")
         self.cfg = cfg
         self.min_pid_steer_waypoint_distance = cfg['min_pid_steer_waypoint_distance']
         self.min_pid_speed_waypoint_distance = cfg['min_pid_speed_waypoint_distance']
         self.steer_gain = float(cfg['steer_gain'])
         self.throttle_max = cfg['throttle_max']
         self.brake_max = cfg['brake_max']
-        
+        self._logger = pylot.utils.get_logger(cfg["log_file_name"])
         self.execution_mode = cfg['execution_mode']
         self.simulator_control_frequency = float(cfg['simulator_control_frequency'])
         self.simulator_fps = cfg['simulator_fps']
@@ -65,7 +65,7 @@ class PIDControlOperator:
                 return False
             state.pose_msg = pose_msg
             state.waypoints_msg = waypoints_msg
-            # print("--------------------->>>>state.pose_msg ：{}".format(state.pose_msg))
+            # print(--------------------->>>>state.pose_msg ：{}".format(state.pose_msg))
             # print("--------------------->>>>  state.waypoints_msg ：{}".format(state.waypoints_msg))
         return True
 
@@ -82,7 +82,7 @@ class PIDControlOperator:
                 the watermark.
         """
         timestamp = _state.pose_msg.timestamp
-        print('@{}: received watermark'.format(timestamp))
+        _state._logger.debug('@{}: received watermark'.format(timestamp))
 
         ego_transform = _state.pose_msg.post.transform
         # Vehicle speed in m/s.
@@ -99,10 +99,10 @@ class PIDControlOperator:
             steer = pylot.control.utils.radians_to_steer(
                 angle_steer, _state.steer_gain)
         except ValueError:
-            print('Braking! No more waypoints to follow.')
+            _state._logger.debug('Braking! No more waypoints to follow.')
             throttle, brake = 0.0, 0.5
             steer = 0.0
-        print(
+        _state._logger.debug(
             '@{}: speed {}, location {}, steer {}, throttle {}, brake {}'.
             format(timestamp, current_speed, ego_transform, steer, throttle,
                    brake))

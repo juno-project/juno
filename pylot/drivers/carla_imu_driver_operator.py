@@ -127,7 +127,7 @@ class CarlaIMUDriverOperator():
                              _state.cfg["simulator_timeout"])
         set_simulation_mode(world, _state.cfg)
 
-        _state._vehicle = get_vehicle_handle(world, vehicle_id)
+        _state._vehicle = get_vehicle_handle(world, vehicle_id, "imu_operator")
 
         # Install the IMU.
         imu_blueprint = world.get_blueprint_library().find('sensor.other.imu')

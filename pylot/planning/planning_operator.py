@@ -104,9 +104,7 @@ class PlanningState:
                 import HybridAStarPlanner
             self._planner = HybridAStarPlanner(self._world, hybrid_parameters)
         elif self.planning_type == 'rrt_star':
-            print("try to import")
             from pylot.planning.rrt_star.rrt_star_planner import RRTStarPlanner
-            print("imported")
             self._planner = RRTStarPlanner(self._world, rrt_star_parameters)
         else:
             raise ValueError('Unexpected planning type: {}'.format(
@@ -123,7 +121,6 @@ class PlanningOperator(Operator):
         return PlanningState(configuration)
 
     def finalize(self, state):
-        print("finalize")
         return None
 
     def input_rule(self, _ctx, state, tokens):

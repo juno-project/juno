@@ -13,10 +13,12 @@ from carla import Location, VehicleControl, command
 import erdos
 import pylot.simulation.utils
 import pylot.utils
+from pylot import constant
 from pylot.control.messages import ControlMessage
 from pylot.perception.messages import ObstaclesMessage, SpeedSignsMessage, \
     StopSignsMessage, TrafficLightsMessage, Message
 from zenoh_flow import  Inputs, Operator, Outputs
+
 
 class CarlaState:
     """Initializes and controls a CARLA simulation.
@@ -37,7 +39,7 @@ class CarlaState:
 
     def __init__(self, cfg):
         self.cfg = cfg
-
+        self.source_count = 0
         self.pose_stream = None
         self.pose_stream_for_control = None
         self.ground_traffic_lights_stream = None
@@ -394,7 +396,6 @@ class CarlaOperator(Operator):
         #
         control_msg = carlaMsg['control']
         timestamp = carlaMsg['timestamp']
-
         state.on_control_msg(control_msg)
         state.on_sensor_ready(timestamp)
         state.on_pipeline_finish(timestamp)
@@ -437,6 +438,17 @@ class CarlaOperator(Operator):
                   "global_trajectory_stream": _state.global_trajectory_stream,
                   "timestamp": _state.msg_timestamp
                   }
+
+        # client, world = pylot.simulation.utils.get_world(
+        #     _state.cfg["simulator_host"], _state.cfg["simulator_port"],
+        #     _state.cfg["simulator_timeout"])
+
+        # from pylot.simulation.utils import get_world
+        # _, world = get_world(_state.cfg["simulator_host"],
+        #                      _state.cfg["simulator_port"],
+        #                      _state.cfg["simulator_timeout"])
+        constant.world = _state._world
+        # print("carlar_operator -------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>  world.get_actors() : {}".format(world.get_actors()))
         return {'carla_stream': pickle.dumps(result)}
 
 
