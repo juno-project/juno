@@ -164,7 +164,6 @@ class CarlaCameraDriverOperator(Operator):
         state.vehicle_id_msg = msg['vehicle_id_stream']
         timestamp = msg['timestamp']
         state.release_data(timestamp)
-
         # state.vehicle_id_msg = pickle.load(
         #     open("/home/erdos/workspace/zenoh-flow-auto-driving/test_data/CarlaCameraDriverOperator/input/vehicle_id_msg.pkl",
         #          "rb"))
@@ -196,7 +195,6 @@ class CarlaCameraDriverOperator(Operator):
         set_simulation_mode(world, _state.cfg)
 
         self._vehicle = get_vehicle_handle(world, vehicle_id)
-        print("self._vehicle :{}".format(self._vehicle))
 
         # Install the camera.
         camera_blueprint = world.get_blueprint_library().find(
@@ -227,7 +225,6 @@ class CarlaCameraDriverOperator(Operator):
                   "notify_reading_stream": _state._notify_reading_stream,
                   "timestamp": _state.msg_timestamp
                   }
-
         return {'center_camera_stream': pickle.dumps(result)}
 
 

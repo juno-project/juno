@@ -1,7 +1,7 @@
 import sys
 
 sys.path.remove("/home/erdos/workspace/pylot")
-sys.path.append('/home/erdos/workspace/zenoh-flow/zenoh-flow-auto-driving-xf')
+# sys.path.append('/home/erdos/workspace/zenoh-flow/zenoh-flow-auto-driving-xf')
 sys.path.append('/usr/lib/python3.8')
 sys.path.append('/home/erdos/.local/lib/python3.8/site-packages')
 

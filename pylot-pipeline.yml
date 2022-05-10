@@ -86,6 +86,7 @@ operators:
   - id: PIDControlOperator
     uri: file://./pylot/control/pid_control_operator.py
     configuration:
+      log_file_name: 'pylot.log'
       execution_mode: real-world
       simulator_control_frequency: '-1'
       simulator_fps: 20
@@ -600,9 +601,9 @@ links:
 
 
 #links-7
-#- from:
-#    node : PIDControlOperator
-#    output : waypoints_stream
-#  to:
-#    node : CarlaOperator
-#    input : waypoints_stream
+#loops:
+#- ingress: HeadOperator
+#  egress: EndOperator
+#  feedback_port: feedback-AC
+#  port_type: int
+#  is_infinite: false
