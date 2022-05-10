@@ -50,8 +50,6 @@ class TrafficLightDetState:
         scores = result['scores']
         classes = result['classes']
         num_detections = result['detections']
-
-        print("traffic_light operator -------->  num_detections : {}".format(num_detections))
         num_detections = int(num_detections[0])
         res_labels = [
             self._labels[int(label)] for label in classes[0][:num_detections]

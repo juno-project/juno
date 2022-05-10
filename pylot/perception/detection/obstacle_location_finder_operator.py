@@ -64,7 +64,6 @@ class ObstacleLocationFinderState:
         #     physical_devices[cfg['obstacle_detection_gpu_index']], False)
 
         # Load the model from the saved_model format file.
-        print("init operator state")
         self.cfg = cfg
 
 

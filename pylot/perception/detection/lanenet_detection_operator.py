@@ -1,3 +1,4 @@
+import copy
 import logging
 import math
 import os
@@ -97,10 +98,10 @@ class LanenetDetectionOperator():
         state.camera_stream = msg['camera_stream']
 
         # camera collection frame  output
-        out_path = "/home/erdos/workspace/zenoh-flow-auto-driving/test_out"
-        os.makedirs(out_path, exist_ok=True)
-        state.camera_stream.frame.save(state.camera_stream.timestamp, out_path,
-                                       'tl-detector-{}'.format('LanenetDetOperator_input'))
+        # out_path = "/home/erdos/workspace/zenoh-flow-auto-driving/test_out"
+        # os.makedirs(out_path, exist_ok=True)
+        # state.camera_stream.frame.save(state.camera_stream.timestamp, out_path,
+        #                                'tl-detector-{}'.format('LanenetDetOperator_input'))
 
         print("LanenetDetectionOperator state.camera_stream : {}".format(state.camera_stream))
         return True
@@ -120,14 +121,15 @@ class LanenetDetectionOperator():
                         which the operator sends
                         :py:class:`~pylot.perception.messages.LanesMessage` messages.
                 """
-        msg = _state.camera_stream
-
+        # msg = _state.camera_stream
+        msg = copy.deepcopy(_state.camera_stream)
         print('@{}: {} received message'.format(
-            msg.timestamp, 'LanenetDetectionOperator'))
+            msg, 'LanenetDetectionOperator'))
 
         assert msg.frame.encoding == 'BGR', 'Expects BGR frames'
         image = cv2.resize(msg.frame.as_rgb_numpy_array(), (512, 256),
                            interpolation=cv2.INTER_LINEAR)
+
         image = image / 127.5 - 1.0
         binary_seg_image, instance_seg_image = _state._tf_session.run(
             [_state._binary_seg_ret, _state._instance_seg_ret],
@@ -191,7 +193,6 @@ class LanenetDetectionOperator():
         os.makedirs(_state.cfg['out_path'], exist_ok=True)
         msg.frame.save(msg.timestamp, _state.cfg['out_path'],
                                        'tl-detector-{}'.format('LanenetDetectionOperator'))
-
         return {'lane_detection_stream': pickle.dumps(LanesMessage(msg.timestamp, detected_lanes))}
         # return {"LanesMessage": pickle.dumps(msg)}
         # plt.figure('binary_image')
