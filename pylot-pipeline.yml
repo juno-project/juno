@@ -83,26 +83,28 @@ operators:
       - id: obstacles_wo_history_tracking_stream
         type: usize
 
-#  - id: PIDControlOperator
-#    uri: file://./pylot/control/pid_control_operator.py
-#    configuration:
-#      execution_mode: real-world
-#      simulator_control_frequency: '-1'
-#      simulator_fps: 20
-#      pid_p: '1.0'
-#      pid_d: '0.0'
-#      pid_i: '0.05'
-#      min_pid_steer_waypoint_distance: 5
-#      min_pid_speed_waypoint_distance: 5
-#      steer_gain: '0.7'
-#      throttle_max: 1
-#      brake_max: 1
-#    inputs:
-#      - id: PIDMsg
-#        type: usize
-#    outputs:
-#      - id: ControlMsg
-#        type: usize
+  - id: PIDControlOperator
+    uri: file://./pylot/control/pid_control_operator.py
+    configuration:
+      execution_mode: real-world
+      simulator_control_frequency: '-1'
+      simulator_fps: 20
+      pid_p: '1.0'
+      pid_d: '0.0'
+      pid_i: '0.05'
+      min_pid_steer_waypoint_distance: 5
+      min_pid_speed_waypoint_distance: 5
+      steer_gain: '0.7'
+      throttle_max: 1
+      brake_max: 1
+    inputs:
+      - id: pose_stream
+        type: usize
+      - id: waypoints_stream
+        type: usize
+    outputs:
+      - id: control_stream
+        type: usize
 
 #  - id: LanenetDetectionOperator
 #    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
@@ -373,10 +375,16 @@ sources:
 #       type: usize
 
 sinks:
-  - id : PlanningSink
-    uri: file://./sinks/planning_sink.py
+#  - id : PlanningSink
+#    uri: file://./sinks/planning_sink.py
+#    input:
+#        id: waypoints_stream
+#        type: usize
+
+  - id : ControlSink
+    uri: file://./sinks/pid_control_sink.py
     input:
-        id: waypoints_stream
+        id: control_stream
         type: usize
 
 links:
@@ -560,23 +568,41 @@ links:
   to:
     node : PlanningOperator
     input : carla_stream
+#- from:
+#    node : PlanningOperator
+#    output : waypoints_stream
+#  to:
+#    node : PlanningSink
+#    input : waypoints_stream
+
 - from:
     node : PlanningOperator
     output : waypoints_stream
   to:
-    node : PlanningSink
+    node : PIDControlOperator
     input : waypoints_stream
-#- from:
-#    node : PlanningOperator
-#    output : WaypointsMsg
-#  to:
-#    node : PIDControlOperator
-#    input : WaypointsMsg
+
+- from:
+    node : LocalizationOperator
+    output : pose_stream
+  to:
+    node : PIDControlOperator
+    input : pose_stream
+
+- from:
+    node : PIDControlOperator
+    output : control_stream
+  to:
+    node : ControlSink
+    input : control_stream
+
+
+
 
 #links-7
 #- from:
 #    node : PIDControlOperator
-#    output : WaypointsMsg
+#    output : waypoints_stream
 #  to:
 #    node : CarlaOperator
-#    input : WaypointsMsg
+#    input : waypoints_stream

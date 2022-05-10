@@ -41,16 +41,35 @@ class PIDControlOperator:
         return PIDControlState(configuration)
 
     def finalize(self, state):
-        print("finalize")
         return None
 
     def input_rule(self, _ctx, state, tokens):
         # Using input rules
-        print("input")
+        waypoints_token = tokens.get("waypoints_stream")
+        pose_token = tokens.get("pose_stream")
+
+        if pose_token.is_pending():
+            pose_token.set_action_keep()
+            return False
+        if waypoints_token.is_pending():
+            waypoints_token.set_action_keep()
+            return False
+
+        if not pose_token.is_pending() and not waypoints_token.is_pending() :
+            pose_msg = pickle.loads(bytes(pose_token.get_data()))
+            waypoints_msg = pickle.loads(bytes(waypoints_token.get_data()))
+
+            if pose_msg is None or waypoints_msg is None :
+                pose_token.set_action_drop()
+                waypoints_token.set_action_drop()
+                return False
+            state.pose_msg = pose_msg
+            state.waypoints_msg = waypoints_msg
+            # print("--------------------->>>>state.pose_msg ：{}".format(state.pose_msg))
+            # print("--------------------->>>>  state.waypoints_msg ：{}".format(state.waypoints_msg))
         return True
 
     def output_rule(self, _ctx, _state, outputs, _deadline_miss):
-        print("output")
         return outputs
 
     def run(self, _ctx, _state, inputs):
@@ -62,15 +81,14 @@ class PIDControlOperator:
             timestamp (:py:class:`erdos.timestamp.Timestamp`): The timestamp of
                 the watermark.
         """
-        print("operator starts running")
-        msg = inputs.get("PIDMsg").data
-        msg = pickle.loads(msg)
-        timestamp = msg[0]
+        timestamp = _state.pose_msg.timestamp
         print('@{}: received watermark'.format(timestamp))
-        ego_transform = msg[1]
+
+        ego_transform = _state.pose_msg.post.transform
         # Vehicle speed in m/s.
         current_speed = 1.468
-        waypoints = msg[2]
+        waypoints = _state.waypoints_msg.waypoints
+
         try:
             angle_steer = waypoints.get_angle(
                 ego_transform, _state.min_pid_steer_waypoint_distance)
@@ -88,7 +106,7 @@ class PIDControlOperator:
             '@{}: speed {}, location {}, steer {}, throttle {}, brake {}'.
             format(timestamp, current_speed, ego_transform, steer, throttle,
                    brake))
-        return {'ControlMessage': pickle.dumps(ControlMessage(steer, throttle, brake, False, False, timestamp))}
+        return {'control_stream': pickle.dumps(ControlMessage(steer, throttle, brake, False, False, timestamp))}
 
 def register():
     return PIDControlOperator
