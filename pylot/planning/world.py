@@ -17,7 +17,6 @@ class World(object):
     """A representation of the world that is used by the planners."""
 
     def __init__(self, world_params):
-        print("init world")
         self.static_obstacles = None
         self.obstacle_predictions = []
         self._ego_obstacle_predictions = []
@@ -53,7 +52,6 @@ class World(object):
         self.person_distance_hit_zone = world_params['person_distance_hit_zone']
         self.person_angle_emergency_zone = world_params['person_angle_emergency_zone']
         self.person_distance_emergency_zone = world_params['person_distance_emergency_zone']
-        print("world initialized")
 
     def update(self,
                timestamp,

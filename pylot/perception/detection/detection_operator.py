@@ -44,8 +44,6 @@ class DetectionState:
         scores = result['scores']
         classes = result['classes']
         num_detections = result['detections']
-
-        print("detection operator -------->  num_detections : {}".format(num_detections))
         num_detections = int(num_detections[0])
         res_classes = [int(cls) for cls in classes[0][:num_detections]]
         res_boxes = boxes[0][:num_detections]
@@ -67,7 +65,6 @@ class DetectionOperator():
     def input_rule(self, _ctx, state, tokens):
         token = tokens.get('center_camera_stream')
         msg = pickle.loads(bytes(token.get_data()))
-        print("carlaCameraDriverMsg: {}".format(msg))
         if msg['camera_stream'] == None:
             token.set_action_drop()
             return False
@@ -82,6 +79,7 @@ class DetectionOperator():
 
     def run(self, _ctx, _state, inputs):
         msg = _state.camera_stream
+
         print('@{}: {} received message: {}'.format(
             msg.timestamp, 'DetectionOperator', msg))
         start_time = time.time()
@@ -131,8 +129,6 @@ class DetectionOperator():
                            'detector-{}'.format('DetectionOperator'))
 
         camera_setup = msg.frame.camera_setup
-
-        print("obstacles_stream_wo_depth--------------------： {}".format(ObstaclesMessage(msg.timestamp, obstacles, camera_setup, runtime)))
         return {'obstacles_stream_wo_depth': pickle.dumps(ObstaclesMessage(msg.timestamp, obstacles, camera_setup, runtime))}
 
 

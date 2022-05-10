@@ -255,7 +255,6 @@ class LocalizationOperator(Operator):
             # Set the estimates for the next iteration.
             _state._last_timestamp = current_ts
             _state._last_pose_estimate = current_pose
-
         return {'pose_stream': pickle.dumps(PoseMessage(_state._last_timestamp, _state._last_pose_estimate))}
 
 

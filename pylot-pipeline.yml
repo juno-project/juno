@@ -104,20 +104,20 @@ operators:
 #      - id: ControlMsg
 #        type: usize
 
-  - id: LanenetDetectionOperator
-    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
-    configuration:
-      out_path: ./out_data/
-      log_file_name: pylot.log
-      lane_detection_gpu_index: 0
-      lane_detection_gpu_memory_fraction: 3
-      lanenet_detection_model_path:  /dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
-    inputs:
-      - id: center_camera_stream
-        type: usize
-    outputs:
-      - id: lane_detection_stream
-        type: usize
+#  - id: LanenetDetectionOperator
+#    uri: file://./pylot/perception/detection/lanenet_detection_operator.py
+#    configuration:
+#      out_path: ./out_data/
+#      log_file_name: pylot.log
+#      lane_detection_gpu_index: 0
+#      lane_detection_gpu_memory_fraction: 3
+#      lanenet_detection_model_path:  /dependencies/models/lane_detection/lanenet/tusimple_lanenet.ckpt
+#    inputs:
+#      - id: center_camera_stream
+#        type: usize
+#    outputs:
+#      - id: lane_detection_stream
+#        type: usize
 
   - id: BehaviorPlanningOperator
     uri: file://./pylot/planning/behavior_planning_operator.py
@@ -346,8 +346,8 @@ operators:
         type: usize
       - id: traffic_lights_stream
         type: usize
-      - id: lane_detection_stream
-        type: usize
+#      - id: lane_detection_stream
+#        type: usize
       - id: prediction_stream
         type: usize
       - id: carla_stream
@@ -475,18 +475,18 @@ links:
 
 # links-4
 
-- from:
-    node : carlaCameraDriverOperator
-    output : center_camera_stream
-  to:
-    node : LanenetDetectionOperator
-    input : center_camera_stream
-- from:
-    node : LanenetDetectionOperator
-    output : lane_detection_stream
-  to:
-    node : PlanningOperator
-    input : lane_detection_stream
+#- from:
+#    node : carlaCameraDriverOperator
+#    output : center_camera_stream
+#  to:
+#    node : LanenetDetectionOperator
+#    input : center_camera_stream
+#- from:
+#    node : LanenetDetectionOperator
+#    output : lane_detection_stream
+#  to:
+#    node : PlanningOperator
+#    input : lane_detection_stream
 
 # links-5
 - from:

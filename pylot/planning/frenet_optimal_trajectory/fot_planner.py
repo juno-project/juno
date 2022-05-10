@@ -40,7 +40,6 @@ class FOTPlanner(Planner):
             "klat": hyperparameters['klat'],
             "klon": hyperparameters['klon']
         }
-        print("planner initialized")
 
     def fot_parameters_using_99_percentile(self, ttd):
         maxt = self._flags.maxt

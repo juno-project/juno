@@ -38,7 +38,6 @@ class PIDControlState:
 
 class PIDControlOperator:
     def initialize(self, configuration):
-        print("operator initializing")
         return PIDControlState(configuration)
 
     def finalize(self, state):
@@ -92,5 +91,4 @@ class PIDControlOperator:
         return {'ControlMessage': pickle.dumps(ControlMessage(steer, throttle, brake, False, False, timestamp))}
 
 def register():
-    print("register operator")
     return PIDControlOperator
