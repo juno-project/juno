@@ -1,0 +1,7 @@
+extensions:
+  - name: python
+    file_extension: py
+    source_lib: /home/erdos/workspace/zenoh-flow-python/target/release/libpy_source.so
+    sink_lib: /home/erdos/workspace/zenoh-flow-python/target/release/libpy_sink.so
+    operator_lib: /home/erdos/workspace/zenoh-flow-python/target/release/libpy_op.so
+    config_lib_key: python-script
